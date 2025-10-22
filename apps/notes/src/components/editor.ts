@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import Component from '../lib/component';
+import { html } from '../lib/html';
 
 type EditorState = {
   notes: string;
@@ -23,13 +24,20 @@ export default class Editor extends Component<EditorState> {
   }
 
   render() {
-    this.shadowRoot!.innerHTML = `
+    this.shadowRoot!.innerHTML = html`
       <textarea></textarea>
       <article></article>
+
       <style>
         :host * {
           box-sizing: border-box;
         }
+
+        :host {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
         textarea {
           width: 100%;
         }
