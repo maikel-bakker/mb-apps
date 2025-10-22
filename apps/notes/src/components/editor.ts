@@ -1,5 +1,5 @@
-import { marked } from "marked";
-import Component from "../lib/component";
+import { marked } from 'marked';
+import Component from '../lib/component';
 
 type EditorState = {
   notes: string;
@@ -7,15 +7,15 @@ type EditorState = {
 
 export default class Editor extends Component<EditorState> {
   constructor() {
-    super({ notes: "" });
+    super({ notes: '' });
   }
 
   queryInput() {
-    return this.shadowRoot!.querySelector("textarea")!;
+    return this.shadowRoot!.querySelector('textarea')!;
   }
 
   queryPreview() {
-    return this.shadowRoot!.querySelector("article")!;
+    return this.shadowRoot!.querySelector('article')!;
   }
 
   connectedCallback() {
@@ -40,7 +40,7 @@ export default class Editor extends Component<EditorState> {
 
   setupEventListeners() {
     const textarea = this.queryInput();
-    textarea.addEventListener("input", (event) => {
+    textarea.addEventListener('input', (event) => {
       const target = event.target as HTMLTextAreaElement;
       this.state = { notes: target.value };
     });

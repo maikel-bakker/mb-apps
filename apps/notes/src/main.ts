@@ -1,3 +1,3 @@
-import Editor from "./components/editor";
+import Editor from './components/editor';
 
-customElements.define("mb-editor", Editor);
+customElements.define('mb-editor', Editor);

@@ -3,7 +3,10 @@ type ComponentState = {};
 abstract class Component<T extends ComponentState> extends HTMLElement {
   protected _state: T;
 
-  constructor(initialState: T, shadowRootOptions: ShadowRootInit = { mode: "open" }) {
+  constructor(
+    initialState: T,
+    shadowRootOptions: ShadowRootInit = { mode: 'open' },
+  ) {
     super();
     this.attachShadow(shadowRootOptions);
     this._state = initialState;
