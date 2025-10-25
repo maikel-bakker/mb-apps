@@ -10,6 +10,14 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
     super();
     this.attachShadow(shadowRootOptions);
     this._state = initialState;
+
+    const globalStyle = document.createElement('style');
+    globalStyle.textContent = `
+      * {
+        box-sizing: border-box;
+      }
+    `;
+    this.shadowRoot!.appendChild(globalStyle);
   }
 
   get state(): T {
@@ -24,6 +32,23 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
     this.onStateChange?.(this._state).then(() => {});
   }
 
+  async connectedCallback() {
+    this.render();
+    await this.onMount();
+  }
+
+  private render() {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = this.renderHTML();
+
+    // Append each child of the temp div to the shadow root
+    while (tempDiv.firstChild) {
+      this.shadowRoot!.appendChild(tempDiv.firstChild);
+    }
+  }
+
+  protected abstract renderHTML(): string;
+  protected abstract onMount(): Promise<void>;
   protected abstract onStateChange?(state: T): Promise<void>;
 }
 

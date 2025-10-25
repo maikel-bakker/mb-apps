@@ -19,31 +19,50 @@ export default class Editor extends Component<EditorState> {
     return this.shadowRoot!.querySelector('article')!;
   }
 
-  connectedCallback() {
-    this.render();
+  async onMount() {
+    this.setupEventListeners();
   }
 
-  render() {
-    this.shadowRoot!.innerHTML = html`
+  renderHTML() {
+    return html`
       <textarea></textarea>
       <article></article>
 
       <style>
-        :host * {
-          box-sizing: border-box;
-        }
-
         :host {
           display: grid;
           grid-template-columns: 1fr 1fr;
+          height: 100%;
+          max-height: 100vh;
         }
 
         textarea {
           width: 100%;
+          height: 100%;
+          background-color: #211c2b;
+          color: #fff;
+          border: none;
+          font-size: 1em;
+          resize: none;
+        }
+
+        textarea:focus-visible {
+          outline: 2px solid;
+          outline-offset: -2px;
+          outline-color: #453a59;
+          border: none;
+        }
+
+        textarea,
+        article {
+          padding: 1em;
+        }
+
+        article * {
+          margin-top: 0;
         }
       </style>
     `;
-    this.setupEventListeners();
   }
 
   setupEventListeners() {
@@ -54,7 +73,7 @@ export default class Editor extends Component<EditorState> {
     });
   }
 
-  protected async onStateChange() {
+  async onStateChange() {
     const preview = this.queryPreview();
     preview.innerHTML = await marked(this.state.notes);
   }
