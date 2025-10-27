@@ -24,12 +24,12 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
     return this._state;
   }
 
-  set state(newState: T) {
+  set state(newState: Partial<T>) {
     this._state = {
       ...this._state,
       ...newState,
     };
-    this.onStateChange?.(this._state).then(() => {});
+    this.onStateChange?.(this._state, newState).then(() => {});
   }
 
   async connectedCallback() {
@@ -49,7 +49,10 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
 
   protected abstract renderHTML(): string;
   protected abstract onMount(): Promise<void>;
-  protected abstract onStateChange?(state: T): Promise<void>;
+  protected abstract onStateChange?(
+    state: T,
+    newState: Partial<T>,
+  ): Promise<void>;
 }
 
 export default Component;
