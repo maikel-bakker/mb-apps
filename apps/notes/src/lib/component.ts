@@ -1,3 +1,5 @@
+import { html } from './html';
+
 type ComponentState = {};
 
 abstract class Component<T extends ComponentState> extends HTMLElement {
@@ -13,9 +15,7 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
 
     const globalStyle = document.createElement('style');
     globalStyle.textContent = `
-      * {
-        box-sizing: border-box;
-      }
+
     `;
     this.shadowRoot!.appendChild(globalStyle);
   }
@@ -33,26 +33,32 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
   }
 
   async connectedCallback() {
+    this.shadowRoot!.innerHTML = html`
+      <style>
+        * {
+          box-sizing: border-box;
+        }
+      </style>
+      <slot name="component-root"></slot>
+    `;
     this.render();
-    await this.onMount();
+    await this.onMount?.();
   }
 
   private render() {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = this.renderHTML();
-
-    // Append each child of the temp div to the shadow root
-    while (tempDiv.firstChild) {
-      this.shadowRoot!.appendChild(tempDiv.firstChild);
+    const componentRoot = this.shadowRoot!.querySelector(
+      'slot[name="component-root"]',
+    );
+    if (!componentRoot) {
+      throw new Error('Component root slot not found');
     }
+
+    componentRoot.innerHTML = this.renderHTML();
   }
 
   protected abstract renderHTML(): string;
-  protected abstract onMount(): Promise<void>;
-  protected abstract onStateChange?(
-    state: T,
-    newState: Partial<T>,
-  ): Promise<void>;
+  protected onMount?(): Promise<void>;
+  protected onStateChange?(state: T, newState: Partial<T>): Promise<void>;
 }
 
 export default Component;

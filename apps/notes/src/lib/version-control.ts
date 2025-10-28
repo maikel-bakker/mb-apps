@@ -1,11 +1,5 @@
 import { createPatch, applyPatch } from 'diff';
-import { v4 as uuid } from 'uuid';
-
-export type Patch = {
-  id: string;
-  date: string;
-  patch: ReturnType<typeof createPatch>;
-};
+import type { Patch } from '../types';
 
 export default class VersionControl {
   private initialVersion: string;
@@ -34,7 +28,7 @@ export default class VersionControl {
 
   public commitPatch(newContent: string): string {
     const patch = this.createPatch(newContent);
-    const patchId = uuid();
+    const patchId = crypto.randomUUID();
     this.patches.push({
       id: patchId,
       date: new Date().toISOString(),

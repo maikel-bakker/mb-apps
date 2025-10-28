@@ -1,7 +1,8 @@
 import { marked } from 'marked';
 import Component from '../lib/component';
 import { html } from '../lib/html';
-import VersionControl, { type Patch } from '../lib/version-control';
+import { VersionControl } from '../lib';
+import type { Patch } from '../types';
 
 type EditorState = {
   notes: string;
