@@ -1,11 +1,13 @@
 import { marked } from 'marked';
 import Component from '../lib/component';
 import { html } from '../lib/html';
-import { VersionControl } from '../lib';
+import { getNoteId, VersionControl } from '../lib';
 import type { Patch } from '../types';
+import { notesStore } from '../stores';
 
 type EditorState = {
   notes: string;
+  noteId?: string;
   patches: Patch[];
 };
 
@@ -17,7 +19,8 @@ export default class Editor extends Component<EditorState> {
   private versionControl: VersionControl;
 
   constructor(initialNotes = '') {
-    super({ notes: initialNotes, patches: [] });
+    const noteId = getNoteId();
+    super({ notes: initialNotes, patches: [], noteId });
     this.versionControl = new VersionControl(initialNotes);
   }
 
@@ -31,6 +34,35 @@ export default class Editor extends Component<EditorState> {
 
   async onMount() {
     this.setupEventListeners();
+    await this.loadNote();
+  }
+
+  async loadNote() {
+    let noteId = this.state.noteId;
+
+    if (!noteId) {
+      const noteId = getNoteId();
+      console.log('noteId', noteId);
+
+      if (!noteId) {
+        throw new Error('No noteId found in URL');
+      }
+
+      this.state = { noteId };
+    }
+
+    const note = await notesStore.getNote(noteId);
+
+    if (!note) {
+      throw new Error(`Note with id ${noteId} not found`);
+    }
+
+    this.versionControl = new VersionControl(note.initialVersion, note.patches);
+
+    this.state = {
+      notes: this.versionControl.getCurrentVersion(),
+      patches: this.versionControl.allPatches,
+    };
   }
 
   renderHTML() {
@@ -125,6 +157,19 @@ export default class Editor extends Component<EditorState> {
 
   // @TODO: add method to remove event listeners on unmount
   setupEventListeners() {
+    console.log('test');
+    this.setupEditor();
+
+    // listen for history changes and get noteId from /notes/:noteId
+    window.addEventListener('popstate', async () => {
+      const noteId = getNoteId();
+      if (!noteId) return;
+
+      this.state = { noteId };
+    });
+  }
+
+  setupEditor() {
     const textarea = this.queryInput();
     let debounceTimer: number;
 
@@ -136,14 +181,17 @@ export default class Editor extends Component<EditorState> {
         clearTimeout(debounceTimer);
       }
 
-      debounceTimer = setTimeout(() => {
-        this.saveNotes(target.value);
+      debounceTimer = setTimeout(async () => {
+        await this.saveNotes(target.value);
       }, 1000);
     });
   }
 
-  saveNotes(notes: string) {
+  async saveNotes(notes: string) {
     this.versionControl.commitPatch(notes);
+    await notesStore.updateNote(this.state.noteId!, {
+      patches: this.versionControl.allPatches,
+    });
     this.state = { patches: this.versionControl.allPatches };
     this.showToast('Notes saved');
   }
@@ -201,6 +249,14 @@ export default class Editor extends Component<EditorState> {
 
     if (newState.patches) {
       this.renderPatches();
+    }
+
+    if (newState.noteId) {
+      await this.loadNote();
+    }
+
+    if (newState.notes) {
+      this.queryInput().value = this.state.notes;
     }
   }
 }

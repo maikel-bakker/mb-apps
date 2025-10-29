@@ -1,13 +1,15 @@
-import { Component, html } from '../lib';
+import { Component, html, navigateTo } from '../lib';
 import type { Note } from '../types';
+import { notesStore } from '../stores';
+import { NOTE_EVENTS } from '../stores/notes';
 
 interface NotesListState {
   notes: Note[];
 }
 
 export default class NotesList extends Component<NotesListState> {
-  constructor(initialNotes: Note[] = []) {
-    super({ notes: initialNotes });
+  constructor() {
+    super({ notes: [] });
   }
 
   protected renderHTML() {
@@ -37,11 +39,19 @@ export default class NotesList extends Component<NotesListState> {
 
   protected async onMount() {
     this.setupEventListeners();
+    await this.loadNotes();
     this.renderNotes();
   }
 
   protected async onStateChange() {
     this.renderNotes();
+  }
+
+  async loadNotes() {
+    const allNotes = await notesStore.getAllNotes();
+    const notesArray = Object.values(allNotes);
+
+    this.state = { notes: notesArray };
   }
 
   renderNotes() {
@@ -53,21 +63,34 @@ export default class NotesList extends Component<NotesListState> {
         ${this.state.notes
           .map(
             (note) =>
-              html`<li><input type="text" value="${note.title}" /></li>`,
+              html`<li>
+                <input
+                  type="text"
+                  value="${note.title}"
+                  data-note-id="${note.id}"
+                />
+              </li>`,
           )
           .join('')}
       </ul>
     `;
 
     const input = ul.querySelectorAll('input');
-    input.forEach((inputElement, index) => {
-      inputElement.addEventListener('change', (e) => {
+    input.forEach((inputElement) => {
+      inputElement.addEventListener('change', async (e) => {
         const target = e.target as HTMLInputElement;
-        const updatedNotes = [...this.state.notes];
-        updatedNotes[index] = {
-          ...updatedNotes[index],
-          title: target.value,
-        };
+        const noteId = target.getAttribute('data-note-id')!;
+        const newTitle = target.value;
+
+        await notesStore.updateNote(noteId, { title: newTitle });
+      });
+
+      inputElement.addEventListener('focus', (e) => {
+        const target = e.target as HTMLInputElement;
+
+        // push history state to /:noteID
+        const noteId = target.getAttribute('data-note-id')!;
+        navigateTo(`/notes/${noteId}`);
       });
     });
   }
@@ -75,24 +98,22 @@ export default class NotesList extends Component<NotesListState> {
   setupEventListeners() {
     const newNoteButton = this.shadowRoot!.querySelector('#new-note')!;
 
-    newNoteButton.addEventListener('click', () => {
-      const newNote: Note = {
-        id: crypto.randomUUID(),
-        title: 'Untitled Note',
-        initialVersion: '',
-        patches: [],
-      };
-      this.state = { notes: [...this.state.notes, newNote] };
+    newNoteButton.addEventListener('click', async () => {
+      await this.createNote();
+    });
+
+    notesStore.addEventListener(NOTE_EVENTS.NOTES_UPDATED, (event) => {
+      this.state = { notes: event.detail.notes };
     });
   }
 
-  createNote(title = 'Untitled Note') {
+  async createNote(title = 'Untitled Note') {
     const newNote: Note = {
       id: crypto.randomUUID(),
       title: title,
       initialVersion: `# ${title}`,
       patches: [],
     };
-    this.state = { notes: [...this.state.notes, newNote] };
+    await notesStore.setNote(newNote.id, newNote);
   }
 }
