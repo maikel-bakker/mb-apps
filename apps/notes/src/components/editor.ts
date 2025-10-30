@@ -42,7 +42,6 @@ export default class Editor extends Component<EditorState> {
 
     if (!noteId) {
       const noteId = getNoteId();
-      console.log('noteId', noteId);
 
       if (!noteId) {
         throw new Error('No noteId found in URL');
@@ -83,7 +82,7 @@ export default class Editor extends Component<EditorState> {
         textarea {
           width: 100%;
           height: 100%;
-          background-color: #211c2b;
+          background-color: var(--mb-c-editor-background);
           color: #fff;
           border: none;
           font-size: 1em;
@@ -100,6 +99,10 @@ export default class Editor extends Component<EditorState> {
         textarea,
         article {
           padding: 1em;
+        }
+
+        article {
+          background-color: var(--mb-c-editor-preview);
         }
 
         article * {

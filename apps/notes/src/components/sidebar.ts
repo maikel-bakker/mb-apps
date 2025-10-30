@@ -19,7 +19,7 @@ export default class Sidebar extends Component<SidebarState> {
       </aside>
       <style>
         aside {
-          background: #15121c;
+          background: var(--mb-c-sidebar-background);
           height: 100%;
           padding: 0.75em;
 
