@@ -174,7 +174,7 @@ export default class Editor extends Component<EditorState> {
 
   setupEditor() {
     const textarea = this.queryInput();
-    let debounceTimer: number;
+    let debounceTimer: NodeJS.Timeout;
 
     textarea.addEventListener('input', (event) => {
       const target = event.target as HTMLTextAreaElement;

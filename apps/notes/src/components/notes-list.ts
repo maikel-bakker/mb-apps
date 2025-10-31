@@ -4,7 +4,6 @@ import {
   darkenHex,
   getNoteId,
   html,
-  lightenHex,
   navigateTo,
 } from 'lib';
 import type { Note } from '../types';
@@ -105,9 +104,15 @@ export default class NotesList extends Component<NotesListState> {
       throw new Error('No notes found in store');
     }
 
-    const noteId = getNoteId() || notesArray[0].id;
+    let noteId = getNoteId();
 
-    this.state = { notes: notesArray, noteId };
+    if (!noteId) {
+      const firstNoteId = notesArray[0].id;
+      navigateTo(`/notes/${firstNoteId}`);
+      noteId = firstNoteId;
+    }
+
+    this.state = { notes: notesArray, noteId: noteId };
   }
 
   renderNotes() {
@@ -136,21 +141,31 @@ export default class NotesList extends Component<NotesListState> {
 
     const input = ul.querySelectorAll('input');
     input.forEach((inputElement) => {
+      let debounceTimer: NodeJS.Timeout;
+
       inputElement.addEventListener('change', async (e) => {
         const target = e.target as HTMLInputElement;
         const noteId = target.getAttribute('data-note-id')!;
         const newTitle = target.value;
 
-        await notesStore.updateNote(noteId, { title: newTitle });
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+
+        debounceTimer = setTimeout(async () => {
+          await notesStore.updateNote(noteId, { title: newTitle });
+        }, 1000);
       });
 
-      inputElement.addEventListener('focus', (e) => {
+      inputElement.addEventListener('focusin', (e) => {
         const target = e.target as HTMLInputElement;
-
-        // push history state to /:noteID
         const noteId = target.getAttribute('data-note-id')!;
-        navigateTo(`/notes/${noteId}`);
-        this.state = { noteId: noteId };
+        const noteIdFromRouter = getNoteId();
+
+        if (noteId !== noteIdFromRouter) {
+          navigateTo(`/notes/${noteId}`);
+          this.state = { noteId: noteId };
+        }
       });
     });
   }
