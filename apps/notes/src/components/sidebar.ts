@@ -21,7 +21,6 @@ export default class Sidebar extends Component<SidebarState> {
         aside {
           background: var(--mb-c-sidebar-background);
           height: 100%;
-          padding: 0.75em;
 
           h1 {
             margin-top: 0;

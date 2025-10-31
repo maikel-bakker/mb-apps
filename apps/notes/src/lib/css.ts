@@ -144,3 +144,15 @@ export function convertColorsToCSSVars(
 
   return convert(colors, [prefix]);
 }
+
+export function lightenHex(hex: string, percent: number): string {
+  const hsl = hexToHsl(hex);
+  const lightenedHsl = lighten(hsl, percent);
+  return hslToHex(lightenedHsl);
+}
+
+export function darkenHex(hex: string, percent: number): string {
+  const hsl = hexToHsl(hex);
+  const darkenedHsl = darken(hsl, percent);
+  return hslToHex(darkenedHsl);
+}

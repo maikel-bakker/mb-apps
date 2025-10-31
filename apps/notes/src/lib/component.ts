@@ -1,9 +1,11 @@
 import { html } from './html';
+import { globalStyle, theme, type Theme } from 'styles';
 
 type ComponentState = {};
 
 abstract class Component<T extends ComponentState> extends HTMLElement {
   protected _state: T;
+  protected theme: Theme;
 
   constructor(
     initialState: T,
@@ -12,12 +14,7 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
     super();
     this.attachShadow(shadowRootOptions);
     this._state = initialState;
-
-    const globalStyle = document.createElement('style');
-    globalStyle.textContent = `
-
-    `;
-    this.shadowRoot!.appendChild(globalStyle);
+    this.theme = theme;
   }
 
   get state(): T {
@@ -35,9 +32,7 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
   async connectedCallback() {
     this.shadowRoot!.innerHTML = html`
       <style>
-        * {
-          box-sizing: border-box;
-        }
+        ${globalStyle}
       </style>
       <slot name="component-root"></slot>
     `;

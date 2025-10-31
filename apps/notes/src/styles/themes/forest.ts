@@ -1,13 +1,16 @@
-import { convertColorsToCSSVars, darken, hexToHsl, hslToHex } from '../lib';
-import { pipe } from '../utils';
+import { darken, hexToHsl, hslToHex } from 'lib';
+import { pipe } from 'utils';
+import type { Theme } from '../types';
 
 const baseColors = {
-  foreground: '#ffffff',
-  background: '#272231',
+  foreground: '#d4cdbb',
+  background: '#272e33',
+  hint: '#83c092',
 };
 
 const editor = {
   editorPreview: baseColors.background,
+  editorForeground: baseColors.foreground,
   editorBackground: pipe(
     hexToHsl,
     (hsl: any) => darken(hsl, 3),
@@ -20,11 +23,9 @@ const editor = {
   )(baseColors.background),
 };
 
-export const theme = {
+export const forestTheme: Theme = {
   c: {
     ...baseColors,
     ...editor,
   },
 };
-
-export const themeCSSVars = convertColorsToCSSVars(theme);

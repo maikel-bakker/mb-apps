@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -20,7 +20,22 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@components": ["components"],
+      "@components/*": ["components/*"],
+      "@utils": ["utils"],
+      "@utils/*": ["utils/*"],
+      "@lib": ["lib"],
+      "@lib/*": ["lib/*"],
+      "@stores": ["stores"],
+      "@stores/*": ["stores/*"],
+      "styles": ["styles"],
+      "styles/*": ["styles/*"],
+      "types": ["types"],
+      "types/*": ["types/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "vite.config.ts"]
 }

@@ -1,15 +1,39 @@
-import { Component, html, navigateTo } from '../lib';
+import {
+  Component,
+  convertColorsToCSSVars,
+  darkenHex,
+  getNoteId,
+  html,
+  lightenHex,
+  navigateTo,
+} from 'lib';
 import type { Note } from '../types';
 import { notesStore } from '../stores';
 import { NOTE_EVENTS } from '../stores/notes';
 
 interface NotesListState {
   notes: Note[];
+  noteId?: string;
 }
 
+type NotesListTheme = {
+  foreground: string;
+  foregroundHover: string;
+  foregroundActive: string;
+  background: string;
+};
+
 export default class NotesList extends Component<NotesListState> {
+  private notesListTheme: NotesListTheme;
+
   constructor() {
     super({ notes: [] });
+    this.notesListTheme = {
+      foreground: darkenHex(this.theme.c.foreground, 10),
+      foregroundHover: this.theme.c.foreground,
+      foregroundActive: this.theme.c.hint,
+      background: this.theme.c.editorBackground,
+    };
   }
 
   protected renderHTML() {
@@ -17,17 +41,42 @@ export default class NotesList extends Component<NotesListState> {
       <slot name="notes"></slot>
       <button id="new-note">+ New Note</button>
       <style>
+        :host {
+          ${convertColorsToCSSVars(this.notesListTheme, '--mb-notes-list')}
+        }
+      </style>
+      <style>
         ul {
           margin: 0;
           padding: 0;
           list-style: none;
           display: flex;
           flex-direction: column;
-          gap: 0.5em;
         }
 
         input {
           width: 100%;
+          background: transparent;
+          color: var(--mb-notes-list-foreground);
+          border: none;
+          padding: 0.5em 0.75em;
+          transition:
+            color 0.1s ease,
+            background-color 0.1s ease;
+
+          &:focus {
+            outline: none;
+          }
+
+          &:hover {
+            color: var(--mb-notes-list-foreground-hover);
+            background-color: var(--mb-notes-list-background);
+          }
+        }
+
+        [aria-selected='true'] input {
+          color: var(--mb-notes-list-foreground-active);
+          background-color: var(--mb-notes-list-background);
         }
 
         #new-note {
@@ -51,7 +100,14 @@ export default class NotesList extends Component<NotesListState> {
     const allNotes = await notesStore.getAllNotes();
     const notesArray = Object.values(allNotes);
 
-    this.state = { notes: notesArray };
+    // @TODO: handle noteId when no notes are available
+    if (!notesArray?.length) {
+      throw new Error('No notes found in store');
+    }
+
+    const noteId = getNoteId() || notesArray[0].id;
+
+    this.state = { notes: notesArray, noteId };
   }
 
   renderNotes() {
@@ -59,11 +115,14 @@ export default class NotesList extends Component<NotesListState> {
     if (!ul) return;
 
     ul.innerHTML = html`
-      <ul>
+      <ul role="menu">
         ${this.state.notes
           .map(
             (note) =>
-              html`<li>
+              html`<li
+                role="menuitem"
+                aria-selected="${this.state.noteId === note.id}"
+              >
                 <input
                   type="text"
                   value="${note.title}"
@@ -91,6 +150,7 @@ export default class NotesList extends Component<NotesListState> {
         // push history state to /:noteID
         const noteId = target.getAttribute('data-note-id')!;
         navigateTo(`/notes/${noteId}`);
+        this.state = { noteId: noteId };
       });
     });
   }

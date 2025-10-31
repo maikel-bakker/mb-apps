@@ -83,7 +83,7 @@ export default class Editor extends Component<EditorState> {
           width: 100%;
           height: 100%;
           background-color: var(--mb-c-editor-background);
-          color: #fff;
+          color: var(--mb-c-editor-foreground);
           border: none;
           font-size: 1em;
           resize: none;
@@ -92,7 +92,7 @@ export default class Editor extends Component<EditorState> {
         textarea:focus-visible {
           outline: 2px solid;
           outline-offset: -2px;
-          outline-color: #453a59;
+          outline-color: var(--mb-c-hint);
           border: none;
         }
 
