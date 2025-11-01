@@ -1,20 +1,30 @@
+import { convertColorsToCSSVars, css, insertStyle } from './css';
 import { html } from './html';
 import { globalStyle, theme, type Theme } from 'styles';
 
 type ComponentState = {};
 
-abstract class Component<T extends ComponentState> extends HTMLElement {
+abstract class Component<
+  T extends ComponentState,
+  K extends {} = {},
+> extends HTMLElement {
   protected _state: T;
   protected theme: Theme;
+  protected componentTheme?: K;
 
   constructor(
     initialState: T,
     shadowRootOptions: ShadowRootInit = { mode: 'open' },
+    componentThemeFn?: (theme: Theme) => K,
   ) {
     super();
     this.attachShadow(shadowRootOptions);
     this._state = initialState;
     this.theme = theme;
+
+    if (componentThemeFn) {
+      this.componentTheme = componentThemeFn(this.theme);
+    }
   }
 
   get state(): T {
@@ -49,6 +59,16 @@ abstract class Component<T extends ComponentState> extends HTMLElement {
     }
 
     componentRoot.innerHTML = this.renderHTML();
+  }
+
+  protected initComponentTheme(componentTheme: K, prefix: string) {
+    const style = document.createElement('style');
+    style.innerHTML = css`
+      :host {
+        ${convertColorsToCSSVars(componentTheme, `--mb-${prefix}`)}
+      }
+    `;
+    this.shadowRoot!.prepend(style);
   }
 
   protected abstract renderHTML(): string;

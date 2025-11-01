@@ -1,4 +1,6 @@
-import { camelCaseToKebabCase } from '../utils';
+import { camelCaseToKebabCase, pipe } from 'utils';
+
+type HSL = [number, number, number];
 
 export function css(strings: TemplateStringsArray, ...values: any[]) {
   return strings.reduce((acc, str, i) => acc + str + (values[i] || ''), '');
@@ -57,25 +59,19 @@ export function hexToHsl(hex: string): [number, number, number] {
   return [h * 360, s * 100, l * 100];
 }
 
-export function lighten(
-  hsl: [number, number, number],
-  percent: number,
-): [number, number, number] {
+export function lighten(hsl: HSL, percent: number): HSL {
   const [hue, saturation, lightness] = hsl;
   const newLightness = Math.min(lightness + percent, 100);
   return [hue, saturation, newLightness];
 }
 
-export function darken(
-  hsl: [number, number, number],
-  percent: number,
-): [number, number, number] {
+export function darken(hsl: HSL, percent: number): HSL {
   const [hue, saturation, lightness] = hsl;
   const newLightness = Math.max(lightness - percent, 0);
   return [hue, saturation, newLightness];
 }
 
-export function hslToHex(hsl: [number, number, number]): string {
+export function hslToHex(hsl: HSL): string {
   let [h, s, l] = hsl;
   s /= 100;
   l /= 100;
@@ -146,13 +142,9 @@ export function convertColorsToCSSVars(
 }
 
 export function lightenHex(hex: string, percent: number): string {
-  const hsl = hexToHsl(hex);
-  const lightenedHsl = lighten(hsl, percent);
-  return hslToHex(lightenedHsl);
+  return pipe(hexToHsl, (hsl: HSL) => lighten(hsl, percent), hslToHex)(hex);
 }
 
 export function darkenHex(hex: string, percent: number): string {
-  const hsl = hexToHsl(hex);
-  const darkenedHsl = darken(hsl, percent);
-  return hslToHex(darkenedHsl);
+  return pipe(hexToHsl, (hsl: HSL) => darken(hsl, percent), hslToHex)(hex);
 }

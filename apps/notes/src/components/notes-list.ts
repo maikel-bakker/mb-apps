@@ -1,9 +1,9 @@
 import {
   Component,
-  convertColorsToCSSVars,
   darkenHex,
   getNoteId,
   html,
+  lightenHex,
   navigateTo,
 } from 'lib';
 import type { Note } from '../types';
@@ -19,31 +19,22 @@ type NotesListTheme = {
   foreground: string;
   foregroundHover: string;
   foregroundActive: string;
-  background: string;
+  backgroundHover: string;
+  backgroundActive: string;
 };
 
-export default class NotesList extends Component<NotesListState> {
-  private notesListTheme: NotesListTheme;
-
+export default class NotesList extends Component<
+  NotesListState,
+  NotesListTheme
+> {
   constructor() {
     super({ notes: [] });
-    this.notesListTheme = {
-      foreground: darkenHex(this.theme.c.foreground, 10),
-      foregroundHover: this.theme.c.foreground,
-      foregroundActive: this.theme.c.hint,
-      background: this.theme.c.editorBackground,
-    };
   }
 
   protected renderHTML() {
     return html`
       <slot name="notes"></slot>
       <button id="new-note">+ New Note</button>
-      <style>
-        :host {
-          ${convertColorsToCSSVars(this.notesListTheme, '--mb-notes-list')}
-        }
-      </style>
       <style>
         ul {
           margin: 0;
@@ -69,13 +60,13 @@ export default class NotesList extends Component<NotesListState> {
 
           &:hover {
             color: var(--mb-notes-list-foreground-hover);
-            background-color: var(--mb-notes-list-background);
+            background-color: var(--mb-notes-list-background-hover);
           }
         }
 
         [aria-selected='true'] input {
           color: var(--mb-notes-list-foreground-active);
-          background-color: var(--mb-notes-list-background);
+          background-color: var(--mb-notes-list-background-active);
         }
 
         #new-note {
@@ -86,6 +77,16 @@ export default class NotesList extends Component<NotesListState> {
   }
 
   protected async onMount() {
+    this.initComponentTheme(
+      {
+        foreground: this.theme.c.foreground,
+        foregroundHover: lightenHex(this.theme.c.foreground, 10),
+        foregroundActive: this.theme.c.hint,
+        backgroundHover: darkenHex(this.theme.c.background, 3),
+        backgroundActive: darkenHex(this.theme.c.background, 3),
+      },
+      'notes-list',
+    );
     this.setupEventListeners();
     await this.loadNotes();
     this.renderNotes();

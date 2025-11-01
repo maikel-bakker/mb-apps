@@ -1,14 +1,26 @@
-import { Component } from '../lib';
-import { html } from '../lib/html';
-import type { Note } from '../types';
+import { Component, darkenHex, html } from 'lib';
+import type { Note } from 'types';
 
 type SidebarState = {
   notes: Note[];
 };
 
-export default class Sidebar extends Component<SidebarState> {
+type SidebarTheme = {
+  background: string;
+};
+
+export default class Sidebar extends Component<SidebarState, SidebarTheme> {
   constructor(initialNotes: Note[] = []) {
     super({ notes: initialNotes });
+  }
+
+  async onMount() {
+    this.initComponentTheme(
+      {
+        background: darkenHex(this.theme.c.background, 8),
+      },
+      'sidebar',
+    );
   }
 
   protected renderHTML() {
@@ -19,7 +31,7 @@ export default class Sidebar extends Component<SidebarState> {
       </aside>
       <style>
         aside {
-          background: var(--mb-c-sidebar-background);
+          background: var(--mb-sidebar-background);
           height: 100%;
 
           h1 {

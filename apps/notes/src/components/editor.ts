@@ -1,7 +1,7 @@
 import { marked } from 'marked';
 import Component from '../lib/component';
 import { html } from '../lib/html';
-import { getNoteId, VersionControl } from '../lib';
+import { darkenHex, getNoteId, VersionControl } from 'lib';
 import type { Patch } from '../types';
 import { notesStore } from '../stores';
 
@@ -11,11 +11,19 @@ type EditorState = {
   patches: Patch[];
 };
 
+type EditorTheme = {
+  previewBackground: string;
+  previewForeground: string;
+  textareaForeground: string;
+  textareaBackground: string;
+  textareaFocusBorder: string;
+};
+
 marked.setOptions({
   breaks: true,
 });
 
-export default class Editor extends Component<EditorState> {
+export default class Editor extends Component<EditorState, EditorTheme> {
   private versionControl: VersionControl;
 
   constructor(initialNotes = '') {
@@ -33,6 +41,16 @@ export default class Editor extends Component<EditorState> {
   }
 
   async onMount() {
+    this.initComponentTheme(
+      {
+        previewBackground: this.theme.c.background,
+        previewForeground: this.theme.c.foreground,
+        textareaBackground: darkenHex(this.theme.c.background, 3),
+        textareaForeground: this.theme.c.foreground,
+        textareaFocusBorder: this.theme.c.hint,
+      },
+      'editor',
+    );
     this.setupEventListeners();
     await this.loadNote();
   }
@@ -41,7 +59,7 @@ export default class Editor extends Component<EditorState> {
     let noteId = this.state.noteId;
 
     if (!noteId) {
-      const noteId = getNoteId();
+      noteId = getNoteId();
 
       if (!noteId) {
         throw new Error('No noteId found in URL');
@@ -82,18 +100,18 @@ export default class Editor extends Component<EditorState> {
         textarea {
           width: 100%;
           height: 100%;
-          background-color: var(--mb-c-editor-background);
-          color: var(--mb-c-editor-foreground);
+          background-color: var(--mb-editor-textarea-background);
+          color: var(--mb-editor-textarea-foreground);
           border: none;
           font-size: 1em;
           resize: none;
+          outline: 2px solid transparent;
+          outline-offset: -2px;
+          transition: outline-color 0.1s ease;
         }
 
         textarea:focus-visible {
-          outline: 2px solid;
-          outline-offset: -2px;
-          outline-color: var(--mb-c-hint);
-          border: none;
+          outline-color: var(--mb-editor-textarea-focus-border);
         }
 
         textarea,
@@ -102,7 +120,7 @@ export default class Editor extends Component<EditorState> {
         }
 
         article {
-          background-color: var(--mb-c-editor-preview);
+          background-color: var(--mb-editor-preview-background);
         }
 
         article * {
