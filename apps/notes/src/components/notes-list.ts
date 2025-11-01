@@ -179,7 +179,8 @@ export default class NotesList extends Component<
     });
 
     notesStore.addEventListener(NOTE_EVENTS.NOTES_UPDATED, (event) => {
-      this.state = { notes: event.detail.notes };
+      const customEvent = event as CustomEvent<{ notes: Note[] }>;
+      this.state = { notes: customEvent.detail.notes };
     });
   }
 
