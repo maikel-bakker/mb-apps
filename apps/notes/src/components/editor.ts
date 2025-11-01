@@ -9,6 +9,7 @@ type EditorState = {
   notes: string;
   noteId?: string;
   patches: Patch[];
+  patchId?: string;
 };
 
 type EditorTheme = {
@@ -17,6 +18,10 @@ type EditorTheme = {
   textareaForeground: string;
   textareaBackground: string;
   textareaFocusBorder: string;
+  historyItemBackground: string;
+  historyItemHoverBackground: string;
+  historyItemHoverBorderColor: string;
+  historyItemSelectedBorderColor: string;
 };
 
 marked.setOptions({
@@ -47,7 +52,11 @@ export default class Editor extends Component<EditorState, EditorTheme> {
         previewForeground: this.theme.c.foreground,
         textareaBackground: darkenHex(this.theme.c.background, 3),
         textareaForeground: this.theme.c.foreground,
-        textareaFocusBorder: this.theme.c.hint,
+        textareaFocusBorder: this.theme.c.focus,
+        historyItemBackground: darkenHex(this.theme.c.background, 5),
+        historyItemHoverBackground: darkenHex(this.theme.c.background, 1),
+        historyItemHoverBorderColor: this.theme.c.focus,
+        historyItemSelectedBorderColor: this.theme.c.secondary,
       },
       'editor',
     );
@@ -79,6 +88,7 @@ export default class Editor extends Component<EditorState, EditorTheme> {
     this.state = {
       notes: this.versionControl.getCurrentVersion(),
       patches: this.versionControl.allPatches,
+      patchId: this.versionControl.allPatches.at(-1)?.id,
     };
   }
 
@@ -87,7 +97,10 @@ export default class Editor extends Component<EditorState, EditorTheme> {
       <textarea></textarea>
       <article></article>
       <div class="toast"></div>
-      <ul class="versions"></ul>
+      <div class="versions">
+        <ul></ul>
+        <button class="secondary">History</button>
+      </div>
 
       <style>
         :host {
@@ -151,25 +164,53 @@ export default class Editor extends Component<EditorState, EditorTheme> {
           position: absolute;
           bottom: 1em;
           right: 1em;
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.1em;
 
           button {
-            background: #191520;
+            width: 100%;
+          }
+
+          ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.1em;
+            max-height: 0;
+            overflow-y: hidden;
+            transition:
+              max-height 0.2s ease,
+              opacity 0.2s ease;
+            opacity: 0;
+          }
+
+          ul.show {
+            max-height: 30vh;
+            overflow-y: auto;
+            opacity: 1;
+          }
+
+          li button {
+            background: var(--mb-editor-history-item-background);
             border: none;
             color: #fff;
-            padding: 1em;
             cursor: pointer;
             outline: 1px solid transparent;
-                          outline-offset: -1px;
-            transition: outline-color 0.2s ease-in-out;
+            outline-offset: -1px;
+            transition:
+              outline-color 0.2s ease,
+              background 0.2s ease;
 
             &:hover {
-              outline-color: #9e89ca;
+              background: var(--mb-editor-history-item-background-hover);
+              outline-color: var(--mb-editor-history-item-hover-border-color);
+            }
+
+            &[aria-pressed='true'] {
+              outline-color: var(
+                --mb-editor-history-item-selected-border-color
+              );
+            }
           }
         }
       </style>
@@ -228,8 +269,14 @@ export default class Editor extends Component<EditorState, EditorTheme> {
   }
 
   renderPatches() {
-    const versionsList = this.shadowRoot!.querySelector('.versions');
+    const versionsList = this.shadowRoot!.querySelector('.versions > ul');
     if (!versionsList) return;
+    const historyButton = this.shadowRoot!.querySelector('.versions > button');
+    if (!historyButton) return;
+
+    historyButton.addEventListener('click', () => {
+      versionsList.classList.toggle('show');
+    });
 
     const patches = [...this.state.patches];
 
@@ -239,7 +286,10 @@ export default class Editor extends Component<EditorState, EditorTheme> {
         .map(
           (patch) => html`
             <li>
-              <button data-patch-id="${patch.id}">
+              <button
+                data-patch-id="${patch.id}"
+                aria-pressed="${this.state.patchId === patch.id}"
+              >
                 ${new Date(patch.date).toLocaleString()}
               </button>
             </li>
@@ -253,7 +303,7 @@ export default class Editor extends Component<EditorState, EditorTheme> {
         const patchId = button.getAttribute('data-patch-id')!;
         const version = this.versionControl.getVersion(patchId);
 
-        this.state = { notes: version };
+        this.state = { notes: version, patchId };
         this.queryInput().value = version;
         this.showToast(
           `Switched to version from ${new Date(
@@ -268,7 +318,7 @@ export default class Editor extends Component<EditorState, EditorTheme> {
     const preview = this.queryPreview();
     preview.innerHTML = await marked(this.state.notes);
 
-    if (newState.patches) {
+    if (newState.patches || newState.patchId) {
       this.renderPatches();
     }
 

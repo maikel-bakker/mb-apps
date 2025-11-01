@@ -70,7 +70,7 @@ export default class NotesList extends Component<
         }
 
         #new-note {
-          margin-top: 1em;
+          margin: 1em 0.75em;
         }
       </style>
     `;

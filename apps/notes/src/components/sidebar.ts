@@ -35,7 +35,8 @@ export default class Sidebar extends Component<SidebarState, SidebarTheme> {
           height: 100%;
 
           h1 {
-            margin-top: 0;
+            margin: 0;
+            padding: 0.75em;
             font-size: 1em;
           }
         }
