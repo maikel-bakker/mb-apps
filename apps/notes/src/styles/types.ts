@@ -5,6 +5,7 @@ export type Theme = {
     hint: string;
     hintHover: string;
     secondary: string;
+    secondaryHover: string;
     focus: string;
   };
 };

@@ -1,4 +1,4 @@
-import { convertColorsToCSSVars, css, insertStyle } from './css';
+import { convertColorsToCSSVars, css } from './css';
 import { html } from './html';
 import { globalStyle, theme, type Theme } from 'styles';
 

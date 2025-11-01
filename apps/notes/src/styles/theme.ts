@@ -1,5 +1,5 @@
 import { convertColorsToCSSVars } from 'lib';
-import { catpuccinTheme, forestTheme } from './themes';
+import { forestTheme } from './themes';
 
 export const theme = forestTheme;
 export const themeCSSVars = convertColorsToCSSVars(theme);
