@@ -3,7 +3,7 @@ import localForage from 'localforage';
 
 export const NOTE_EVENTS = {
   NOTE_ADDED: 'note::added',
-  NOTE_REMOVED: 'note::removed',
+  NOTE_DELETED: 'note::deleted',
   NOTE_UPDATED: 'note::updated',
   NOTES_UPDATED: 'notes::updated',
 };
@@ -42,9 +42,14 @@ class NotesStore extends EventTarget {
     return this.db.getItem<Note>(id);
   }
 
-  async removeNote(id: string) {
+  async deleteNote(id: string) {
     return this.db.removeItem(id).then(() => {
-      this.dispatchEvent(new CustomEvent('note::removed', { detail: { id } }));
+      this.dispatchEvent(
+        new CustomEvent(NOTE_EVENTS.NOTE_DELETED, { detail: { id } }),
+      );
+
+      this.notes = this.notes.filter((note) => note.id !== id);
+
       this.dispatchEvent(
         new CustomEvent(NOTE_EVENTS.NOTES_UPDATED, {
           detail: { notes: this.notes },

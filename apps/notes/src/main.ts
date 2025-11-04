@@ -1,4 +1,4 @@
-import { Editor, Sidebar, NotesList } from './components';
+import { Editor, Sidebar, NotesList, Notes } from 'components';
 import { css, insertStyle } from './lib/css';
 import { themeCSSVars, globalStyle } from './styles';
 
@@ -22,13 +22,12 @@ insertStyle(css`
   }
 
   #app {
-    display: grid;
-    grid-template-columns: 200px 1fr;
     height: 100%;
   }
 `);
 insertStyle(globalStyle);
 
+customElements.define('mb-notes', Notes);
 customElements.define('mb-editor', Editor);
 customElements.define('mb-sidebar', Sidebar);
 customElements.define('mb-notes-list', NotesList);

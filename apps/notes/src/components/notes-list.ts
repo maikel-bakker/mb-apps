@@ -1,14 +1,5 @@
-import {
-  Component,
-  darkenHex,
-  getNoteId,
-  html,
-  lightenHex,
-  navigateTo,
-} from 'lib';
+import { Component, darkenHex, html, lightenHex } from 'lib';
 import type { Note } from '../types';
-import { notesStore } from '../stores';
-import { NOTE_EVENTS } from '../stores/notes';
 
 interface NotesListState {
   notes: Note[];
@@ -23,10 +14,24 @@ type NotesListTheme = {
   backgroundActive: string;
 };
 
+export const NOTES_LIST_ATTRIBUTES = {
+  NOTES: 'data-notes',
+  NOTE_ID: 'data-note-id',
+};
+
+export const NOTES_LIST_CUSTOM_PROPS = {
+  ON_NOTE_INPUT_CHANGE: 'data-on-note-input-change',
+  ON_NEW_NOTE_CLICK: 'data-on-new-note-click',
+  ON_NOTE_DELETE_CLICK: 'data-on-note-delete-click',
+  ON_NOTE_FOCUS: 'data-on-note-focus',
+};
+
 export default class NotesList extends Component<
   NotesListState,
   NotesListTheme
 > {
+  static observedAttributes = Object.values(NOTES_LIST_ATTRIBUTES);
+
   constructor() {
     super({ notes: [] });
   }
@@ -42,6 +47,12 @@ export default class NotesList extends Component<
           list-style: none;
           display: flex;
           flex-direction: column;
+        }
+
+        li {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
 
         input {
@@ -61,12 +72,35 @@ export default class NotesList extends Component<
           &:hover {
             color: var(--mb-notes-list-foreground-hover);
             background-color: var(--mb-notes-list-background-hover);
+
+            + button {
+              background-color: var(--mb-notes-list-background-hover);
+            }
+          }
+        }
+
+        input + button {
+          background-color: transparent;
+          color: var(--mb-notes-list-foreground);
+          font-size: 1em;
+          padding: 0;
+          width: 2em;
+          aspect-ratio: 1 / 1;
+          display: block;
+
+          &:hover {
+            background-color: var(--mb-notes-list-background-active);
+            color: red;
           }
         }
 
         [aria-selected='true'] input {
           color: var(--mb-notes-list-foreground-active);
           background-color: var(--mb-notes-list-background-active);
+
+          + button {
+            background-color: var(--mb-notes-list-background-active);
+          }
         }
 
         #new-note {
@@ -88,32 +122,23 @@ export default class NotesList extends Component<
       'notes-list',
     );
     this.setupEventListeners();
-    await this.loadNotes();
     this.renderNotes();
+  }
+
+  attributeChangedCallback(name: string, _: any, newValue: any) {
+    if (name === NOTES_LIST_ATTRIBUTES.NOTES && newValue) {
+      const notes = JSON.parse(newValue) as Note[];
+      this.state = { notes: notes };
+    }
+
+    if (name === NOTES_LIST_ATTRIBUTES.NOTE_ID) {
+      this.state = { noteId: newValue };
+    }
   }
 
   protected async onStateChange() {
+    this.renderHTML();
     this.renderNotes();
-  }
-
-  async loadNotes() {
-    const allNotes = await notesStore.getAllNotes();
-    const notesArray = Object.values(allNotes);
-
-    // @TODO: handle noteId when no notes are available
-    if (!notesArray?.length) {
-      throw new Error('No notes found in store');
-    }
-
-    let noteId = getNoteId();
-
-    if (!noteId) {
-      const firstNoteId = notesArray[0].id;
-      navigateTo(`/notes/${firstNoteId}`);
-      noteId = firstNoteId;
-    }
-
-    this.state = { notes: notesArray, noteId: noteId };
   }
 
   renderNotes() {
@@ -134,6 +159,9 @@ export default class NotesList extends Component<
                   value="${note.title}"
                   data-note-id="${note.id}"
                 />
+                <button aria-label="Delete note" data-note-id="${note.id}">
+                  &times;
+                </button>
               </li>`,
           )
           .join('')}
@@ -146,7 +174,7 @@ export default class NotesList extends Component<
 
       inputElement.addEventListener('change', async (e) => {
         const target = e.target as HTMLInputElement;
-        const noteId = target.getAttribute('data-note-id')!;
+        const noteId = NotesList.getNoteIdFromElement(target)!;
         const newTitle = target.value;
 
         if (debounceTimer) {
@@ -154,19 +182,24 @@ export default class NotesList extends Component<
         }
 
         debounceTimer = setTimeout(async () => {
-          await notesStore.updateNote(noteId, { title: newTitle });
+          this._customProps?.onNoteInputChange?.(noteId, { title: newTitle });
         }, 1000);
       });
 
       inputElement.addEventListener('focusin', (e) => {
         const target = e.target as HTMLInputElement;
-        const noteId = target.getAttribute('data-note-id')!;
-        const noteIdFromRouter = getNoteId();
+        const noteId = NotesList.getNoteIdFromElement(target)!;
 
-        if (noteId !== noteIdFromRouter) {
-          navigateTo(`/notes/${noteId}`);
-          this.state = { noteId: noteId };
-        }
+        this._customProps?.onNoteFocus?.(noteId);
+      });
+    });
+
+    const deleteButtons = ul.querySelectorAll('li > button');
+    deleteButtons.forEach((buttonElement) => {
+      buttonElement.addEventListener('click', async (e) => {
+        const target = e.target as HTMLButtonElement;
+        const noteId = NotesList.getNoteIdFromElement(target)!;
+        await this._customProps?.onNoteDeleteClick?.(noteId);
       });
     });
   }
@@ -175,22 +208,11 @@ export default class NotesList extends Component<
     const newNoteButton = this.shadowRoot!.querySelector('#new-note')!;
 
     newNoteButton.addEventListener('click', async () => {
-      await this.createNote();
-    });
-
-    notesStore.addEventListener(NOTE_EVENTS.NOTES_UPDATED, (event) => {
-      const customEvent = event as CustomEvent<{ notes: Note[] }>;
-      this.state = { notes: customEvent.detail.notes };
+      await this._customProps?.onNewNoteClick?.();
     });
   }
 
-  async createNote(title = 'Untitled Note') {
-    const newNote: Note = {
-      id: crypto.randomUUID(),
-      title: title,
-      initialVersion: `# ${title}`,
-      patches: [],
-    };
-    await notesStore.setNote(newNote.id, newNote);
+  static getNoteIdFromElement(element: Element) {
+    return element.getAttribute('data-note-id');
   }
 }

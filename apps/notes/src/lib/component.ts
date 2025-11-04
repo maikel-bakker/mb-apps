@@ -1,3 +1,4 @@
+import { kebabCaseToCamelCase } from 'utils';
 import { convertColorsToCSSVars, css } from './css';
 import { html } from './html';
 import { globalStyle, theme, type Theme } from 'styles';
@@ -11,6 +12,7 @@ abstract class Component<
   protected _state: T;
   protected theme: Theme;
   protected componentTheme?: K;
+  protected customPropsList?: string[];
 
   constructor(
     initialState: T,
@@ -59,6 +61,43 @@ abstract class Component<
     }
 
     componentRoot.innerHTML = this.renderHTML();
+
+    this.parseCustomProps(componentRoot);
+  }
+
+  /**
+   * Parses custom properties defined by `customPropsList` and attaches it to the elements `_customProps` prop
+   * This is used to bind functions to elements via attributes since there is no native way to pass
+   * functions to web components via attributes
+   */
+  private parseCustomProps(componentRoot: Element) {
+    this.customPropsList?.forEach((prop) => {
+      const elements = componentRoot.querySelectorAll(`[${prop}]`);
+
+      elements.forEach((element) => {
+        const value = element.getAttribute(prop);
+        if (!value) return;
+
+        const methodName = value.match(
+          /(?:async\s+)?([a-zA-Z_$][0-9a-zA-Z_$]*)\s*\(/,
+        )?.[1];
+        if (!methodName) return;
+
+        const handlerFunction = (this as any)[methodName].bind(this);
+        const name = kebabCaseToCamelCase(prop.replace('data-', ''));
+
+        if (element._customProps) {
+          element._customProps = {
+            ...element._customProps,
+            [name]: handlerFunction,
+          };
+        } else {
+          element._customProps = {
+            [name]: handlerFunction,
+          };
+        }
+      });
+    });
   }
 
   protected initComponentTheme(componentTheme: K, prefix: string) {

@@ -1,9 +1,8 @@
 import { marked } from 'marked';
 import Component from '../lib/component';
 import { html } from '../lib/html';
-import { darkenHex, getNoteId, VersionControl } from 'lib';
+import { darkenHex, getNoteId } from 'lib';
 import type { Patch } from '../types';
-import { notesStore } from '../stores';
 
 type EditorState = {
   notes: string;
@@ -28,13 +27,23 @@ marked.setOptions({
   breaks: true,
 });
 
+export const EDITOR_ATTRIBUTES = {
+  NOTE_ID: 'data-note-id',
+  NOTE_VERSION: 'data-note-version',
+  PATCHES: 'data-patches',
+  PATCH_ID: 'data-patch-id',
+};
+
+export const EDITOR_CUSTOM_PROPS = {
+  ON_NOTE_SAVE: 'data-on-note-save',
+  ON_PATCH_SELECT: 'data-on-patch-select',
+};
+
 export default class Editor extends Component<EditorState, EditorTheme> {
-  private versionControl: VersionControl;
+  static observedAttributes = Object.values(EDITOR_ATTRIBUTES);
 
   constructor(initialNotes = '') {
-    const noteId = getNoteId();
-    super({ notes: initialNotes, patches: [], noteId });
-    this.versionControl = new VersionControl(initialNotes);
+    super({ notes: initialNotes, patches: [] });
   }
 
   queryInput() {
@@ -61,35 +70,37 @@ export default class Editor extends Component<EditorState, EditorTheme> {
       'editor',
     );
     this.setupEventListeners();
-    await this.loadNote();
   }
 
-  async loadNote() {
-    let noteId = this.state.noteId;
-
-    if (!noteId) {
-      noteId = getNoteId();
-
-      if (!noteId) {
-        throw new Error('No noteId found in URL');
-      }
-
-      this.state = { noteId };
+  attributeChangedCallback(name: string, _: any, newValue: any) {
+    if (name === EDITOR_ATTRIBUTES.NOTE_ID) {
+      this.state = { noteId: newValue };
     }
 
-    const note = await notesStore.getNote(noteId);
-
-    if (!note) {
-      throw new Error(`Note with id ${noteId} not found`);
+    if (name === EDITOR_ATTRIBUTES.PATCHES && newValue) {
+      const patches = JSON.parse(newValue) as Patch[];
+      this.state = { patches: patches };
     }
 
-    this.versionControl = new VersionControl(note.initialVersion, note.patches);
+    if (name === EDITOR_ATTRIBUTES.PATCH_ID) {
+      this.state = { patchId: newValue };
+    }
 
-    this.state = {
-      notes: this.versionControl.getCurrentVersion(),
-      patches: this.versionControl.allPatches,
-      patchId: this.versionControl.allPatches.at(-1)?.id,
-    };
+    if (name === EDITOR_ATTRIBUTES.NOTE_VERSION) {
+      this.state = { notes: newValue };
+    }
+  }
+
+  async onStateChange(_: EditorState, newState: Partial<EditorState>) {
+    if (newState.patches || newState.patchId) {
+      this.renderPatches();
+    }
+
+    if (newState.notes) {
+      this.queryInput().value = this.state.notes;
+      const preview = this.queryPreview();
+      preview.innerHTML = await marked(this.state.notes);
+    }
   }
 
   renderHTML() {
@@ -219,7 +230,6 @@ export default class Editor extends Component<EditorState, EditorTheme> {
 
   // @TODO: add method to remove event listeners on unmount
   setupEventListeners() {
-    console.log('test');
     this.setupEditor();
 
     // listen for history changes and get noteId from /notes/:noteId
@@ -228,6 +238,15 @@ export default class Editor extends Component<EditorState, EditorTheme> {
       if (!noteId) return;
 
       this.state = { noteId };
+    });
+
+    const versionsList = this.shadowRoot!.querySelector('.versions > ul');
+    if (!versionsList) return;
+    const historyButton = this.shadowRoot!.querySelector('.versions > button');
+    if (!historyButton) return;
+
+    historyButton.addEventListener('click', () => {
+      versionsList.classList.toggle('show');
     });
   }
 
@@ -250,11 +269,9 @@ export default class Editor extends Component<EditorState, EditorTheme> {
   }
 
   async saveNotes(notes: string) {
-    this.versionControl.commitPatch(notes);
-    await notesStore.updateNote(this.state.noteId!, {
-      patches: this.versionControl.allPatches,
-    });
-    this.state = { patches: this.versionControl.allPatches };
+    if (!this.state.noteId) return;
+
+    this._customProps?.onNoteSave?.(this.state.noteId, notes);
     this.showToast('Notes saved');
   }
 
@@ -271,12 +288,6 @@ export default class Editor extends Component<EditorState, EditorTheme> {
   renderPatches() {
     const versionsList = this.shadowRoot!.querySelector('.versions > ul');
     if (!versionsList) return;
-    const historyButton = this.shadowRoot!.querySelector('.versions > button');
-    if (!historyButton) return;
-
-    historyButton.addEventListener('click', () => {
-      versionsList.classList.toggle('show');
-    });
 
     const patches = [...this.state.patches];
 
@@ -301,33 +312,18 @@ export default class Editor extends Component<EditorState, EditorTheme> {
     versionsList.querySelectorAll('button').forEach((button) => {
       button.addEventListener('click', () => {
         const patchId = button.getAttribute('data-patch-id')!;
-        const version = this.versionControl.getVersion(patchId);
+        this._customProps?.onPatchSelect?.(patchId);
+        // const patchId = button.getAttribute('data-patch-id')!;
+        // const version = this._customProps?.onPatchSelect?.(patchId);
 
-        this.state = { notes: version, patchId };
-        this.queryInput().value = version;
-        this.showToast(
-          `Switched to version from ${new Date(
-            this.state.patches.find((p) => p.id === patchId)!.date,
-          ).toLocaleString()}`,
-        );
+        // this.state = { notes: version, patchId };
+        // this.queryInput().value = version;
+        // this.showToast(
+        //   `Switched to version from ${new Date(
+        //     this.state.patches.find((p) => p.id === patchId)!.date,
+        //   ).toLocaleString()}`,
+        // );
       });
     });
-  }
-
-  async onStateChange(_: EditorState, newState: Partial<EditorState>) {
-    const preview = this.queryPreview();
-    preview.innerHTML = await marked(this.state.notes);
-
-    if (newState.patches || newState.patchId) {
-      this.renderPatches();
-    }
-
-    if (newState.noteId) {
-      await this.loadNote();
-    }
-
-    if (newState.notes) {
-      this.queryInput().value = this.state.notes;
-    }
   }
 }
