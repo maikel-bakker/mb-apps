@@ -3,16 +3,15 @@ import { convertColorsToCSSVars, css } from './css';
 import { html } from './html';
 import { globalStyle, theme, type Theme } from 'styles';
 
-type ComponentState = {};
-
 abstract class Component<
-  T extends ComponentState,
+  T extends {},
   K extends {} = {},
+  P extends {} = {},
 > extends HTMLElement {
   protected _state: T;
   protected theme: Theme;
   protected componentTheme?: K;
-  protected customPropsList?: string[];
+  protected propsList?: string[];
 
   constructor(
     initialState: T,
@@ -41,6 +40,11 @@ abstract class Component<
     this.onStateChange?.(this._state, newState).then(() => {});
   }
 
+  get props(): P | undefined {
+    const el = this as Element & { _props?: P };
+    return el._props;
+  }
+
   async connectedCallback() {
     this.shadowRoot!.innerHTML = html`
       <style>
@@ -66,16 +70,18 @@ abstract class Component<
   }
 
   /**
-   * Parses custom properties defined by `customPropsList` and attaches it to the elements `_customProps` prop
+   * Parses custom properties defined by `customPropsList` and attaches it to the elements `_props` prop
    * This is used to bind functions to elements via attributes since there is no native way to pass
    * functions to web components via attributes
    */
   private parseCustomProps(componentRoot: Element) {
-    this.customPropsList?.forEach((prop) => {
+    this.propsList?.forEach((prop) => {
       const elements = componentRoot.querySelectorAll(`[${prop}]`);
 
       elements.forEach((element) => {
-        const value = element.getAttribute(prop);
+        const el = element as Element & { _props?: P };
+
+        const value = el.getAttribute(prop);
         if (!value) return;
 
         const methodName = value.match(
@@ -86,15 +92,15 @@ abstract class Component<
         const handlerFunction = (this as any)[methodName].bind(this);
         const name = kebabCaseToCamelCase(prop.replace('data-', ''));
 
-        if (element._customProps) {
-          element._customProps = {
-            ...element._customProps,
+        if (el._props) {
+          el._props = {
+            ...el._props,
             [name]: handlerFunction,
           };
         } else {
-          element._customProps = {
+          el._props = {
             [name]: handlerFunction,
-          };
+          } as P;
         }
       });
     });

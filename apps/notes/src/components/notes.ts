@@ -13,7 +13,7 @@ interface NotesState {
 }
 
 export default class Notes extends Component<NotesState> {
-  customPropsList = [
+  propsList = [
     ...Object.values(NOTES_LIST_CUSTOM_PROPS),
     ...Object.values(EDITOR_CUSTOM_PROPS),
   ];
@@ -160,6 +160,21 @@ export default class Notes extends Component<NotesState> {
     };
   }
 
+  setNote(id: Note['id']) {
+    const note = this.state.notes.find((note) => note.id === id);
+    if (!note) {
+      throw new Error(`Note with id ${id} not found`);
+    }
+
+    this.versionControl = new VersionControl(note.initialVersion, note.patches);
+    this.state = {
+      noteId: id,
+      noteVersion: this.versionControl.getCurrentVersion(),
+      patches: this.versionControl.allPatches,
+      patchId: this.versionControl.allPatches.at(-1)?.id,
+    };
+  }
+
   async updateNote(...args: Parameters<typeof notesStore.updateNote>) {
     await notesStore.updateNote(...args);
   }
@@ -186,8 +201,9 @@ export default class Notes extends Component<NotesState> {
     const noteIdFromRouter = getNoteId();
     if (id === noteIdFromRouter) return;
 
+    this.setNote(id);
+
     navigateTo(`/notes/${id}`);
-    this.state = { noteId: id };
   }
 
   async saveNoteVersion(noteId: Note['id'], noteVersion: string) {

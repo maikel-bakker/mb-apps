@@ -23,6 +23,11 @@ type EditorTheme = {
   historyItemSelectedBorderColor: string;
 };
 
+type EditorProps = {
+  onNoteSave: (noteId: string, notes: string) => void;
+  onPatchSelect: (patchId: string) => void;
+};
+
 marked.setOptions({
   breaks: true,
 });
@@ -39,7 +44,11 @@ export const EDITOR_CUSTOM_PROPS = {
   ON_PATCH_SELECT: 'data-on-patch-select',
 };
 
-export default class Editor extends Component<EditorState, EditorTheme> {
+export default class Editor extends Component<
+  EditorState,
+  EditorTheme,
+  EditorProps
+> {
   static observedAttributes = Object.values(EDITOR_ATTRIBUTES);
 
   constructor(initialNotes = '') {
@@ -271,7 +280,7 @@ export default class Editor extends Component<EditorState, EditorTheme> {
   async saveNotes(notes: string) {
     if (!this.state.noteId) return;
 
-    this._customProps?.onNoteSave?.(this.state.noteId, notes);
+    this.props?.onNoteSave(this.state.noteId, notes);
     this.showToast('Notes saved');
   }
 
@@ -312,17 +321,7 @@ export default class Editor extends Component<EditorState, EditorTheme> {
     versionsList.querySelectorAll('button').forEach((button) => {
       button.addEventListener('click', () => {
         const patchId = button.getAttribute('data-patch-id')!;
-        this._customProps?.onPatchSelect?.(patchId);
-        // const patchId = button.getAttribute('data-patch-id')!;
-        // const version = this._customProps?.onPatchSelect?.(patchId);
-
-        // this.state = { notes: version, patchId };
-        // this.queryInput().value = version;
-        // this.showToast(
-        //   `Switched to version from ${new Date(
-        //     this.state.patches.find((p) => p.id === patchId)!.date,
-        //   ).toLocaleString()}`,
-        // );
+        this.props?.onPatchSelect(patchId);
       });
     });
   }

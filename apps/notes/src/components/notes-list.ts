@@ -14,6 +14,13 @@ type NotesListTheme = {
   backgroundActive: string;
 };
 
+type NotesListCustomProps = {
+  onNoteInputChange: (noteId: string, newData: { title: string }) => void;
+  onNewNoteClick: () => Promise<void>;
+  onNoteDeleteClick: (noteId: string) => Promise<void>;
+  onNoteFocus: (noteId: string) => void;
+};
+
 export const NOTES_LIST_ATTRIBUTES = {
   NOTES: 'data-notes',
   NOTE_ID: 'data-note-id',
@@ -28,7 +35,8 @@ export const NOTES_LIST_CUSTOM_PROPS = {
 
 export default class NotesList extends Component<
   NotesListState,
-  NotesListTheme
+  NotesListTheme,
+  NotesListCustomProps
 > {
   static observedAttributes = Object.values(NOTES_LIST_ATTRIBUTES);
 
@@ -182,15 +190,14 @@ export default class NotesList extends Component<
         }
 
         debounceTimer = setTimeout(async () => {
-          this._customProps?.onNoteInputChange?.(noteId, { title: newTitle });
+          this.props?.onNoteInputChange(noteId, { title: newTitle });
         }, 1000);
       });
 
       inputElement.addEventListener('focusin', (e) => {
         const target = e.target as HTMLInputElement;
         const noteId = NotesList.getNoteIdFromElement(target)!;
-
-        this._customProps?.onNoteFocus?.(noteId);
+        this.props?.onNoteFocus(noteId);
       });
     });
 
@@ -199,7 +206,7 @@ export default class NotesList extends Component<
       buttonElement.addEventListener('click', async (e) => {
         const target = e.target as HTMLButtonElement;
         const noteId = NotesList.getNoteIdFromElement(target)!;
-        await this._customProps?.onNoteDeleteClick?.(noteId);
+        await this.props?.onNoteDeleteClick(noteId);
       });
     });
   }
@@ -208,7 +215,7 @@ export default class NotesList extends Component<
     const newNoteButton = this.shadowRoot!.querySelector('#new-note')!;
 
     newNoteButton.addEventListener('click', async () => {
-      await this._customProps?.onNewNoteClick?.();
+      await this.props?.onNewNoteClick();
     });
   }
 
