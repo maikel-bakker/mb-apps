@@ -62,6 +62,7 @@ export default class Notes extends Component<NotesState> {
   ) {
     this.setNotesListAttributes(state, newState);
     this.setEditorAttributes(state, newState);
+    debugger;
   }
 
   private setNotesListAttributes(
@@ -128,36 +129,42 @@ export default class Notes extends Component<NotesState> {
   async loadNotes() {
     const allNotes = await notesStore.getAllNotes();
     const notesArray = Object.values(allNotes);
+    const note = await this.getInitialNote(notesArray);
 
-    // @TODO: handle noteId when no notes are available
-    if (!notesArray?.length) {
-      await this.createNote();
-      // throw new Error('No notes found in store');
-    }
-
-    let noteId = getNoteId();
-
-    if (!noteId) {
-      const firstNoteId = notesArray[0].id;
-      this.navigateToNote(firstNoteId);
-      noteId = firstNoteId;
-    }
-
-    const note = notesArray.find((note) => note.id === noteId);
-
-    if (!note) {
-      throw new Error(`Note with id ${noteId} not found`);
-    }
+    navigateTo(`/notes/${note.id}`);
 
     this.versionControl = new VersionControl(note.initialVersion, note.patches);
 
     this.state = {
       notes: notesArray,
-      noteId: noteId,
+      noteId: note.id,
       noteVersion: this.versionControl.getCurrentVersion(),
       patches: this.versionControl.allPatches,
       patchId: this.versionControl.allPatches.at(-1)?.id,
     };
+  }
+
+  private async getInitialNote(notes: Note[]) {
+    let note: Note | undefined;
+    const noteIdFromRouter = getNoteId();
+
+    if (noteIdFromRouter) {
+      note = notes.find((note) => note.id === noteIdFromRouter);
+    }
+
+    if (!note) {
+      note = notes.at(0);
+    }
+
+    if (!note) {
+      note = await this.createNote();
+    }
+
+    if (!note) {
+      throw new Error('Unable to get initial note');
+    }
+
+    return note;
   }
 
   setNote(id: Note['id']) {
@@ -187,6 +194,7 @@ export default class Notes extends Component<NotesState> {
       patches: [],
     };
     await notesStore.setNote(newNote.id, newNote);
+    return newNote;
   }
 
   async deleteNote(...args: Parameters<typeof notesStore.deleteNote>) {
