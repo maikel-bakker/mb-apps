@@ -7,12 +7,14 @@ import { useRepositionOnResize } from "./use-reposition-on-resize";
 type UsePopoverProps = {
   targetRef: React.RefObject<HTMLElement | null>;
   popoverRef: React.RefObject<HTMLElement | null>;
+  containerRef?: React.RefObject<HTMLElement | null>;
   preferredPlacement?: DeterminePositionProps["preferredPlacement"];
 };
 
 export function usePopover({
   targetRef: buttonRef,
   popoverRef,
+  containerRef,
   preferredPlacement,
 }: UsePopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +31,7 @@ export function usePopover({
       const { position } = getPopoverPosition(
         buttonRef.current,
         popoverRef.current,
+        containerRef?.current,
       );
       setPopoverPosition(position);
     } else {
@@ -41,7 +44,7 @@ export function usePopover({
     setPopoverPosition(
       getPopoverPosition(buttonRef.current, popoverRef.current).position,
     );
-  }, [getPopoverPosition, buttonRef, popoverRef]);
+  }, [getPopoverPosition, buttonRef, popoverRef, containerRef]);
 
   useRepositionOnResize(reposition);
   useClickOutside([popoverRef, buttonRef], () => setIsOpen(false));

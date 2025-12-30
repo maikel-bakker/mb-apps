@@ -19,6 +19,7 @@ export type UsePopoverPositionOptions = {
 export type UsePopoverPositionResult = (
   targetEl: HTMLElement,
   popoverEl: HTMLElement,
+  containerEl?: HTMLElement,
 ) => ReturnType<typeof determinePosition>;
 
 /**
@@ -33,10 +34,15 @@ export function usePopoverPosition({
   containerDimensions,
 }: UsePopoverPositionOptions): UsePopoverPositionResult {
   return useCallback(
-    (targetEl: HTMLElement, popoverEl: HTMLElement) => {
+    (
+      targetEl: HTMLElement,
+      popoverEl: HTMLElement,
+      containerEl?: HTMLElement,
+    ) => {
       return determinePosition({
         targetEl,
         popoverEl,
+        containerEl,
         containerDimensions: containerDimensions ?? {
           width: window.innerWidth,
           height: window.innerHeight,

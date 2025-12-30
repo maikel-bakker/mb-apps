@@ -29,6 +29,7 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "concurrently": "^9.2.1",
     "http-server": "^14.1.1",
+    "jsdom": "^27.4.0",
     "live-server": "^1.2.2",
     "rollup": "^4.53.5",
     "rollup-plugin-typescript": "^1.0.1",

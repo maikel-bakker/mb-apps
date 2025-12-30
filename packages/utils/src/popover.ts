@@ -9,6 +9,13 @@ export const placementOptions = [
 
 export type PlacementOptions = (typeof placementOptions)[number];
 
+type Bounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
 type CalcPositionProps = {
   targetRect: DOMRect;
   popoverRect: DOMRect;
@@ -18,18 +25,34 @@ type CalcPositionProps = {
 export type DeterminePositionProps = {
   targetEl: HTMLElement;
   popoverEl: HTMLElement;
-  containerDimensions: Pick<Dimensions, "width" | "height">;
+  containerEl?: HTMLElement;
   preferredPlacement: PlacementOptions;
 };
 
 export function determinePosition({
   targetEl,
   popoverEl,
-  containerDimensions,
+  containerEl,
   preferredPlacement,
 }: DeterminePositionProps) {
-  const targetRect = targetEl.getBoundingClientRect();
+  let targetRect = targetEl.getBoundingClientRect();
   const popoverRect = popoverEl.getBoundingClientRect();
+  const containerRect = containerEl?.getBoundingClientRect();
+
+  // If we're positioning within a scrollable container, the target's `getBoundingClientRect()`
+  // changes as you scroll, but the popover is positioned in the container's content
+  // coordinate space (relative to its padding box). We need to add the container's scroll
+  // offsets to map viewport coords -> container content coords.
+  if (containerRect && containerEl) {
+    const { scrollLeft, scrollTop } = getScrollOffsets(containerEl);
+
+    targetRect = new DOMRect(
+      targetRect.left - (containerRect.left ?? 0) + scrollLeft,
+      targetRect.top - (containerRect.top ?? 0) + scrollTop,
+      targetRect.width,
+      targetRect.height,
+    );
+  }
 
   let placement = preferredPlacement;
   let position: Pick<Dimensions, "top" | "left"> = {
@@ -45,6 +68,16 @@ export function determinePosition({
 
   position = { top, left };
 
+  const bounds =
+    containerRect && containerEl
+      ? getContainerBounds(containerEl, containerRect)
+      : {
+          minX: 0,
+          minY: 0,
+          maxX: window.innerWidth,
+          maxY: window.innerHeight,
+        };
+
   const { isOffScreen, offScreenSides } = checkIfOffScreen(
     {
       top: position.top,
@@ -52,7 +85,7 @@ export function determinePosition({
       width: popoverRect.width,
       height: popoverRect.height,
     },
-    containerDimensions,
+    bounds,
   );
 
   if (isOffScreen) {
@@ -83,7 +116,7 @@ export function determinePosition({
           width: popoverRect.width,
           height: popoverRect.height,
         },
-        containerDimensions,
+        bounds,
       );
 
       if (newOffScreenSides[side]) {
@@ -151,23 +184,48 @@ type Dimensions = {
   height: number;
 };
 
-export function checkIfOffScreen(
-  targetDimensions: Dimensions,
-  containerDimensions: Pick<Dimensions, "width" | "height">,
-) {
+export function checkIfOffScreen(targetDimensions: Dimensions, bounds: Bounds) {
+  const topEdge = targetDimensions.top;
+  const leftEdge = targetDimensions.left;
+  const bottomEdge = targetDimensions.top + targetDimensions.height;
+  const rightEdge = targetDimensions.left + targetDimensions.width;
+
   const offScreenSides = {
-    top: targetDimensions.top < 0,
-    left: targetDimensions.left < 0,
-    bottom:
-      targetDimensions.top + targetDimensions.height >
-      containerDimensions.height,
-    right:
-      targetDimensions.left + targetDimensions.width >
-      containerDimensions.width,
+    top: topEdge < bounds.minY,
+    left: leftEdge < bounds.minX,
+    bottom: bottomEdge > bounds.maxY,
+    right: rightEdge > bounds.maxX,
   };
 
   return {
     isOffScreen: Object.values(offScreenSides).some((v) => v),
     offScreenSides,
+  };
+}
+
+function getContainerBounds(
+  containerEl: HTMLElement,
+  containerRect: DOMRect,
+): Bounds {
+  const { scrollLeft, scrollTop } = getScrollOffsets(containerEl);
+
+  // All popover/target positions in `determinePosition()` are calculated in the container's
+  // *content* coordinate space (we add scroll offsets when mapping from viewport -> content).
+  // So off-screen detection must use the container's *visible viewport* expressed in that same
+  // content coordinate space:
+  // - top-left of visible viewport: (scrollLeft, scrollTop)
+  // - bottom-right: (scrollLeft + rect.width, scrollTop + rect.height)
+  return {
+    minX: scrollLeft,
+    minY: scrollTop,
+    maxX: scrollLeft + (containerRect.width ?? window.innerWidth),
+    maxY: scrollTop + (containerRect.height ?? window.innerHeight),
+  };
+}
+
+function getScrollOffsets(el: HTMLElement) {
+  return {
+    scrollLeft: el.scrollLeft ?? 0,
+    scrollTop: el.scrollTop ?? 0,
   };
 }
