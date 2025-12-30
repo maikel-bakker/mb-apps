@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Popover demo</h1>
+    <div>
+      <label>
+        Tooltip placement:
+        <select class="placement-options" name="tooltip-placement"></select>
+      </label>
+    </div>
+    <div>
+      <label>
+        Button placement:
+        <select class="placement-options" name="button-placement"></select>
+      </label>
+    </div>
+    <div class="demo-container">
+      <button popovertarget="mypopover">Toggle the popover</button>
+      <div id="mypopover" popover>Popover content</div>
+    </div>
+  </body>
+  <style>
+    .demo-container {
+      position: relative;
+      height: 300px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      padding: 20px;
+    }
+    @scope (#mypopover) {
+      :scope {
+        width: 200px;
+        height: 300px;
+        position: absolute;
+        inset: unset;
+        margin: 0;
+        visibility: hidden;
+      }
+    }
+    @scope (button[popovertarget="mypopover"]) {
+      :scope {
+        --margin: 20px;
+      }
+
+      :scope.bottom-left {
+        position: absolute;
+        bottom: var(--margin);
+        left: var(--margin);
+      }
+
+      :scope.bottom-right {
+        position: absolute;
+        bottom: var(--margin);
+        right: var(--margin);
+      }
+
+      :scope.top-left {
+        position: absolute;
+        top: var(--margin);
+        left: var(--margin);
+      }
+
+      :scope.top-right {
+        position: absolute;
+        top: var(--margin);
+        right: var(--margin);
+      }
+
+      :scope.bottom-center {
+        position: absolute;
+        bottom: var(--margin);
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      :scope.top-center {
+        position: absolute;
+        top: var(--margin);
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+  </style>
+  <script type="module">
+    import {
+      calcPosition,
+      placementOptions,
+      checkIfOffScreen,
+      determinePosition,
+    } from "./dist/bundle.esm.js";
+
+    const popover = document.getElementById("mypopover");
+    const target = document.querySelector('button[popovertarget="mypopover"]');
+    const placementSelects = document.querySelectorAll(".placement-options");
+    const tooltipPlacementSelect = document.querySelector(
+      'select[name="tooltip-placement"]',
+    );
+    const buttonPlacementSelect = document.querySelector(
+      'select[name="button-placement"]',
+    );
+
+    placementSelects.forEach((select) => {
+      select.innerHTML = placementOptions
+        .map(
+          (option, index) =>
+            `<option value="${option}" ${index === 0 ? "selected" : ""}>${option}</option>`,
+        )
+        .join("");
+    });
+    target.classList.add(buttonPlacementSelect.value);
+    buttonPlacementSelect.addEventListener("change", (e) => {
+      target.className = "";
+      target.classList.add(e.target.value);
+    });
+
+    popover.addEventListener("toggle", (e) => {
+      const { position } = determinePosition({
+        targetEl: target,
+        popoverEl: e.target,
+        containerDimensions: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+        preferredPlacement: tooltipPlacementSelect.value,
+      });
+
+      e.target.style.top = `${position.top}px`;
+      e.target.style.left = `${position.left}px`;
+      e.target.style.visibility = e.newState === "open" ? "visible" : "hidden";
+    });
+
+    window.addEventListener("resize", () => {
+      if (popover.matches(":popover-open")) {
+        const { position, placement } = determinePosition({
+          targetEl: target,
+          popoverEl: popover,
+          containerDimensions: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          },
+          preferredPlacement: tooltipPlacementSelect.value,
+        });
+
+        popover.style.top = `${position.top}px`;
+        popover.style.left = `${position.left}px`;
+      }
+    });
+  </script>
+  <script type="module" src="dist/bundle.esm.js"></script>
+</html>

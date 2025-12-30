@@ -1,0 +1,10 @@
+@scope (*[popover], .popover) {
+  :scope {
+    width: 200px;
+    height: 300px;
+    position: absolute;
+    inset: unset;
+    margin: 0;
+    border: 2px solid white;
+  }
+}
