@@ -7,13 +7,6 @@ export type UsePopoverPositionOptions = {
    * Falls back to `"bottom-left"`.
    */
   preferredPlacement?: DeterminePositionProps["preferredPlacement"];
-  /** Dimensions of the container within which to position the popover.
-   * Defaults to the viewport size.
-   */
-  containerDimensions?: {
-    width: number;
-    height: number;
-  };
 };
 
 export type UsePopoverPositionResult = (
@@ -31,7 +24,6 @@ export type UsePopoverPositionResult = (
  */
 export function usePopoverPosition({
   preferredPlacement = "bottom-left" as DeterminePositionProps["preferredPlacement"],
-  containerDimensions,
 }: UsePopoverPositionOptions): UsePopoverPositionResult {
   return useCallback(
     (
@@ -43,13 +35,9 @@ export function usePopoverPosition({
         targetEl,
         popoverEl,
         containerEl,
-        containerDimensions: containerDimensions ?? {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
         preferredPlacement,
       });
     },
-    [preferredPlacement, containerDimensions],
+    [preferredPlacement],
   );
 }

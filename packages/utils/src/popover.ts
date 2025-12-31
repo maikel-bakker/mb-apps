@@ -60,13 +60,13 @@ export function determinePosition({
     left: 0,
   };
 
-  const { top, left } = calcPosition({
+  const { top: originalTop, left: originalLeft } = calcPosition({
     targetRect,
     popoverRect,
     placement,
   });
 
-  position = { top, left };
+  position = { top: originalTop, left: originalLeft };
 
   const bounds =
     containerRect && containerEl
@@ -133,6 +133,25 @@ export function determinePosition({
     });
 
     position = { top, left };
+  }
+
+  const { isOffScreen: isFinalOffScreen } = checkIfOffScreen(
+    {
+      top: position.top,
+      left: position.left,
+      width: popoverRect.width,
+      height: popoverRect.height,
+    },
+    bounds,
+  );
+
+  // If still off-screen, revert to preferred placement
+  if (isFinalOffScreen) {
+    placement = preferredPlacement;
+    position = {
+      top: originalTop,
+      left: originalLeft,
+    };
   }
 
   return { position, placement };

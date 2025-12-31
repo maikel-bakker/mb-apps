@@ -2,14 +2,14 @@ import { useRef } from "react";
 import type { StoryObj, Meta } from "@storybook/react-vite";
 import { placementOptions, type PlacementOptions } from "@mb/utils";
 import "../popover.css";
-import { usePopover } from "../hooks/use-popover";
+import { usePopover } from "./use-popover";
 
 type NativePopoverArgs = {
   placement: PlacementOptions;
 };
 
 const meta = {
-  title: "Example/Popover",
+  title: "Hooks/Popover",
   args: {
     placement: "bottom-left" as PlacementOptions,
   },
@@ -84,7 +84,7 @@ export const WithinContainer: Story = {
         <button
           ref={buttonRef}
           onClick={() => setIsOpen((prev) => !prev)}
-          style={{ marginTop: "350px" }}
+          style={{ marginTop: "400px" }}
         >
           Toggle the popover
         </button>
@@ -133,7 +133,7 @@ export const WithinScrollContainer: Story = {
           <button
             ref={buttonRef}
             onClick={() => setIsOpen((prev) => !prev)}
-            style={{ marginTop: "350px" }}
+            style={{ marginTop: "450px" }}
           >
             Toggle the popover
           </button>
@@ -151,6 +151,55 @@ export const WithinScrollContainer: Story = {
             </div>
           )}
         </div>
+      </div>
+    );
+  },
+};
+
+export const WithinOverflowHiddenContainer: Story = {
+  render: (args) => {
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const { isOpen, setIsOpen, popoverPosition } = usePopover({
+      targetRef: buttonRef,
+      popoverRef,
+      preferredPlacement: args.placement,
+    });
+
+    return (
+      <div style={{ height: "1500px" }}>
+        <div
+          style={{
+            position: "relative",
+            width: "500px",
+            height: "100px",
+            overflow: "hidden",
+            border: "1px solid black",
+          }}
+        >
+          <div style={{ height: "800px", position: "relative" }}>
+            <button
+              ref={buttonRef}
+              onClick={() => setIsOpen((prev) => !prev)}
+              style={{ marginTop: "10px" }}
+            >
+              Toggle the popover
+            </button>
+          </div>
+        </div>
+        {isOpen && (
+          <div
+            ref={popoverRef}
+            className="popover"
+            style={{
+              top: popoverPosition ? `${popoverPosition.top}px` : undefined,
+              left: popoverPosition ? `${popoverPosition.left}px` : undefined,
+              visibility: popoverPosition ? "visible" : "hidden",
+            }}
+          >
+            Popover content
+          </div>
+        )}
       </div>
     );
   },

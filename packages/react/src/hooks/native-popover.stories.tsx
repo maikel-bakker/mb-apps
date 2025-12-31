@@ -1,9 +1,9 @@
 import type { StoryObj, Meta } from "@storybook/react-vite";
 import { useRef, useState, useCallback } from "react";
 import { placementOptions, type PlacementOptions } from "@mb/utils";
-import { usePopoverToggle } from "../hooks/use-popover-toggle";
-import { usePopoverPosition } from "../hooks/use-popover-position";
-import { useDraggable } from "../hooks/use-draggable";
+import { usePopoverToggle } from "./use-popover-toggle";
+import { usePopoverPosition } from "./use-popover-position";
+import { useDraggable } from "./use-draggable";
 import "../popover.css";
 
 type NativePopoverArgs = {
@@ -11,7 +11,7 @@ type NativePopoverArgs = {
 };
 
 const meta = {
-  title: "Example/Native Popover",
+  title: "Hooks/Native Popover",
   args: {
     placement: "bottom-left" as PlacementOptions,
   },
