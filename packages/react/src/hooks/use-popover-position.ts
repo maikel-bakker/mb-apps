@@ -12,7 +12,7 @@ export type UsePopoverPositionOptions = {
 export type UsePopoverPositionResult = (
   targetEl: HTMLElement,
   popoverEl: HTMLElement,
-  containerEl?: HTMLElement,
+  containerEl?: HTMLElement | null,
 ) => ReturnType<typeof determinePosition>;
 
 /**
@@ -29,7 +29,7 @@ export function usePopoverPosition({
     (
       targetEl: HTMLElement,
       popoverEl: HTMLElement,
-      containerEl?: HTMLElement,
+      containerEl?: HTMLElement | null,
     ) => {
       return determinePosition({
         targetEl,

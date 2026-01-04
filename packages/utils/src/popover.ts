@@ -25,7 +25,7 @@ type CalcPositionProps = {
 export type DeterminePositionProps = {
   targetEl: HTMLElement;
   popoverEl: HTMLElement;
-  containerEl?: HTMLElement;
+  containerEl?: HTMLElement | null;
   preferredPlacement: PlacementOptions;
 };
 
