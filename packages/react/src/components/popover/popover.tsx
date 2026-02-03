@@ -63,18 +63,22 @@ export function Popover({
   );
 }
 
-type PopoverContentProps = {
+type PopoverContentProps = React.HTMLAttributes<HTMLElement> & {
   children: ReactNode;
   as?: React.ElementType | string;
 };
 
-function PopoverTarget({ children, as }: PopoverContentProps) {
+function PopoverTarget({ children, as, ...props }: PopoverContentProps) {
   const { setIsOpen, targetRef } = useContext(PopoverContext);
 
   const Component = as || "button";
 
   return (
-    <Component ref={targetRef} onClick={() => setIsOpen((prev) => !prev)}>
+    <Component
+      ref={targetRef}
+      onClick={() => setIsOpen((prev) => !prev)}
+      {...props}
+    >
       {children}
     </Component>
   );

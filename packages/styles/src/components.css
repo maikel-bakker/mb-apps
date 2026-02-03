@@ -1,0 +1,209 @@
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  margin-bottom: 0.5em;
+}
+
+.h1 {
+  font-size: 2em;
+}
+
+.h2 {
+  font-size: 1.75em;
+}
+
+.h3 {
+  font-size: 1.5em;
+}
+
+.h4 {
+  font-size: 1.25em;
+}
+
+.h5 {
+  font-size: 1.1em;
+}
+
+.h6 {
+  font-size: 1em;
+}
+
+.content-container {
+  max-width: 900px;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+
+.section {
+  padding: 2em;
+
+  + .section {
+    border-top: 2px solid var(--foreground);
+  }
+
+  .section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.details {
+  summary {
+    cursor: pointer;
+    font-weight: bold;
+
+    + * {
+      margin-top: 1em;
+    }
+  }
+}
+
+.table {
+  border-collapse: collapse;
+  width: calc(100% + 0.5em);
+  margin-left: -0.25em;
+  margin-right: -0.25em;
+
+  tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  tr:hover {
+    td {
+      color: white;
+    }
+  }
+
+  th {
+    text-align: left;
+  }
+
+  td {
+    transition: color 0.2s ease;
+  }
+
+  th,
+  td {
+    padding: 0.5em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+.form {
+  &.two-column {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2em;
+
+    section {
+      display: grid;
+      grid-column: span 2;
+      padding: 0;
+      gap: 1em;
+
+      h1,
+      .h1,
+      h2,
+      .h2,
+      h3,
+      .h3,
+      h4,
+      .h4,
+      h5,
+      .h5,
+      h6,
+      .h6 {
+        margin: 0;
+      }
+
+      > div {
+        display: flex;
+      }
+    }
+
+    button[type="submit"] {
+      grid-column: span 2;
+    }
+  }
+
+  &.horizontal {
+    flex-direction: row;
+    align-items: center;
+    gap: 1em;
+  }
+
+  &,
+  fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  div {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+}
+
+.label {
+  display: block;
+
+  input[type="checkbox"] {
+    margin-right: 0.5em;
+  }
+}
+
+.button {
+  display: inline-block;
+  padding: 0.75em 1em;
+  font-size: inherit;
+  background: transparent;
+  border: 2px solid var(--foreground);
+  font-family: inherit;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--border-radius);
+
+  &:focus {
+    color: #fff;
+    outline: 2px solid var(--hint);
+    outline-offset: -2px;
+  }
+
+  &[type="submit"],
+  &.primary {
+    cursor: pointer;
+    background: var(--cta);
+    color: var(--white);
+    border: none;
+    font-weight: bold;
+  }
+
+  &.secondary {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  &.outline {
+    border: 2px solid var(--foreground);
+    background: transparent;
+    color: var(--foreground);
+  }
+}
+
+.card {
+  border-radius: var(--border-radius);
+  padding: 1em;
+  border-width: 2px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.2);
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}

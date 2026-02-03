@@ -1,0 +1,35 @@
+{
+  "name": "@mb/styles",
+  "version": "1.0.0",
+  "description": "Shared CSS styles for mb apps",
+  "main": "index.js",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./styles.css": "./dist/styles.css",
+    "./styles.min.css": "./dist/styles.min.css"
+  },
+  "style": "dist/styles.css",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build:css": "postcss src/index.css -o dist/styles.css",
+    "build:min": "postcss src/index.css -o dist/styles.min.css",
+    "build": "npm run clean && npm run build:css && NODE_ENV=production npm run build:min",
+    "dev": "npm run dev:css",
+    "dev:css": "postcss src/index.css -o dist/styles.css -w",
+    "dev:min": "NODE_ENV=production postcss src/index.css -o dist/styles.min.css -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "autoprefixer": "^10.4.23",
+    "cssnano": "^7.1.2",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^16.1.1"
+  }
+}

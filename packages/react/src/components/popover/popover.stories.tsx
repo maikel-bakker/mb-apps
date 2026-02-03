@@ -20,7 +20,9 @@ export const GeneralImplementation: Story = {
   render: ({ preferredPlacement }) => {
     return (
       <Popover preferredPlacement={preferredPlacement}>
-        <Popover.Target>Toggle the popover</Popover.Target>
+        <Popover.Target className="button primary">
+          Toggle the popover
+        </Popover.Target>
         <Popover.Content>Popover content</Popover.Content>
       </Popover>
     );
@@ -49,7 +51,9 @@ export const WithinContainer: Story = {
             preferredPlacement={preferredPlacement}
             containerRef={containerRef}
           >
-            <Popover.Target>Toggle the popover</Popover.Target>
+            <Popover.Target className="button primary">
+              Toggle the popover
+            </Popover.Target>
             <Popover.Content>Popover content</Popover.Content>
           </Popover>
         </div>
@@ -87,7 +91,9 @@ export const WithinScrollContainer: Story = {
             preferredPlacement={preferredPlacement}
             containerRef={containerRef}
           >
-            <Popover.Target>Toggle the popover</Popover.Target>
+            <Popover.Target className="button primary">
+              Toggle the popover
+            </Popover.Target>
             <Popover.Content>Popover content</Popover.Content>
           </Popover>
         </div>
@@ -118,7 +124,9 @@ export const WithinOverflowHiddenContainer: Story = {
             container: document.body,
           }}
         >
-          <Popover.Target>Toggle the popover</Popover.Target>
+          <Popover.Target className="button primary">
+            Toggle the popover
+          </Popover.Target>
           <Popover.Content>Popover content</Popover.Content>
         </Popover>
       </div>
