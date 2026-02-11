@@ -1,8 +1,9 @@
-import { Component, getNoteId, html, navigateTo, VersionControl } from 'lib';
-import { notesStore, NOTE_EVENTS } from 'stores';
-import type { Note, Patch } from 'types';
-import { NOTES_LIST_ATTRIBUTES, NOTES_LIST_CUSTOM_PROPS } from './notes-list';
-import { EDITOR_ATTRIBUTES, EDITOR_CUSTOM_PROPS } from './editor';
+import { html } from "@mb/ui";
+import { Component, getNoteId, navigateTo, VersionControl } from "lib";
+import { notesStore, NOTE_EVENTS } from "stores";
+import type { Note, Patch } from "types";
+import { NOTES_LIST_ATTRIBUTES, NOTES_LIST_CUSTOM_PROPS } from "./notes-list";
+import { EDITOR_ATTRIBUTES, EDITOR_CUSTOM_PROPS } from "./editor";
 
 interface NotesState {
   notes: Note[];
@@ -20,8 +21,8 @@ export default class Notes extends Component<NotesState> {
   private versionControl: VersionControl;
 
   constructor() {
-    super({ notes: [], noteVersion: '', patches: [] });
-    this.versionControl = new VersionControl('');
+    super({ notes: [], noteVersion: "", patches: [] });
+    this.versionControl = new VersionControl("");
   }
 
   renderHTML() {
@@ -30,7 +31,7 @@ export default class Notes extends Component<NotesState> {
         <mb-sidebar>
           <mb-notes-list
             ${NOTES_LIST_ATTRIBUTES.NOTES}="${JSON.stringify(this.state.notes)}"
-            ${NOTES_LIST_ATTRIBUTES.NOTE_ID}="${this.state.noteId || ''}"
+            ${NOTES_LIST_ATTRIBUTES.NOTE_ID}="${this.state.noteId || ""}"
             ${NOTES_LIST_CUSTOM_PROPS.ON_NOTE_INPUT_CHANGE}="${this.updateNote}"
             ${NOTES_LIST_CUSTOM_PROPS.ON_NEW_NOTE_CLICK}="${this.createNote}"
             ${NOTES_LIST_CUSTOM_PROPS.ON_NOTE_DELETE_CLICK}="${this.deleteNote}"
@@ -38,10 +39,10 @@ export default class Notes extends Component<NotesState> {
           ></mb-notes-list>
         </mb-sidebar>
         <mb-editor
-          ${EDITOR_ATTRIBUTES.NOTE_ID}="${this.state.noteId || ''}"
+          ${EDITOR_ATTRIBUTES.NOTE_ID}="${this.state.noteId || ""}"
           ${EDITOR_ATTRIBUTES.NOTE_VERSION}="${this.state.noteVersion}"
           ${EDITOR_ATTRIBUTES.PATCHES}="${JSON.stringify(this.state.patches)}"
-          ${EDITOR_ATTRIBUTES.PATCH_ID}="${this.state.patchId || ''}"
+          ${EDITOR_ATTRIBUTES.PATCH_ID}="${this.state.patchId || ""}"
           ${EDITOR_CUSTOM_PROPS.ON_NOTE_SAVE}="${this.saveNoteVersion}"
           ${EDITOR_CUSTOM_PROPS.ON_PATCH_SELECT}="${this.onPatchSelect}"
         ></mb-editor>
@@ -56,10 +57,7 @@ export default class Notes extends Component<NotesState> {
     `;
   }
 
-  protected async onStateChange(
-    state: NotesState,
-    newState: Partial<NotesState>,
-  ) {
+  async onStateChange(state: NotesState, newState: Partial<NotesState>) {
     this.setNotesListAttributes(state, newState);
     this.setEditorAttributes(state, newState);
     debugger;
@@ -69,7 +67,7 @@ export default class Notes extends Component<NotesState> {
     state: NotesState,
     newState: Partial<NotesState>,
   ) {
-    const mbNotesList = this.shadowRoot?.querySelector('mb-notes-list');
+    const mbNotesList = this.shadowRoot?.querySelector("mb-notes-list");
     if (!mbNotesList) return;
 
     if (newState.notes) {
@@ -82,7 +80,7 @@ export default class Notes extends Component<NotesState> {
     if (newState.noteId) {
       mbNotesList.setAttribute(
         NOTES_LIST_ATTRIBUTES.NOTE_ID,
-        state.noteId || '',
+        state.noteId || "",
       );
     }
   }
@@ -91,11 +89,11 @@ export default class Notes extends Component<NotesState> {
     state: NotesState,
     newState: Partial<NotesState>,
   ) {
-    const mbEditor = this.shadowRoot?.querySelector('mb-editor');
+    const mbEditor = this.shadowRoot?.querySelector("mb-editor");
     if (!mbEditor) return;
 
     if (newState.noteId) {
-      mbEditor.setAttribute(EDITOR_ATTRIBUTES.NOTE_ID, state.noteId || '');
+      mbEditor.setAttribute(EDITOR_ATTRIBUTES.NOTE_ID, state.noteId || "");
     }
 
     if (newState.noteVersion) {
@@ -110,11 +108,11 @@ export default class Notes extends Component<NotesState> {
     }
 
     if (newState.patchId) {
-      mbEditor.setAttribute(EDITOR_ATTRIBUTES.PATCH_ID, state.patchId || '');
+      mbEditor.setAttribute(EDITOR_ATTRIBUTES.PATCH_ID, state.patchId || "");
     }
   }
 
-  protected async onMount() {
+  async onMount() {
     this.setupEventListeners();
     await this.loadNotes();
   }
@@ -161,13 +159,13 @@ export default class Notes extends Component<NotesState> {
     }
 
     if (!note) {
-      throw new Error('Unable to get initial note');
+      throw new Error("Unable to get initial note");
     }
 
     return note;
   }
 
-  setNote(id: Note['id']) {
+  setNote(id: Note["id"]) {
     const note = this.state.notes.find((note) => note.id === id);
     if (!note) {
       throw new Error(`Note with id ${id} not found`);
@@ -186,7 +184,7 @@ export default class Notes extends Component<NotesState> {
     await notesStore.updateNote(...args);
   }
 
-  async createNote(title = 'Untitled Note') {
+  async createNote(title = "Untitled Note") {
     const newNote: Note = {
       id: crypto.randomUUID(),
       title: title,
@@ -205,7 +203,7 @@ export default class Notes extends Component<NotesState> {
     }
   }
 
-  navigateToNote(id: Note['id']) {
+  navigateToNote(id: Note["id"]) {
     const noteIdFromRouter = getNoteId();
     if (id === noteIdFromRouter) return;
 
@@ -214,7 +212,7 @@ export default class Notes extends Component<NotesState> {
     navigateTo(`/notes/${id}`);
   }
 
-  async saveNoteVersion(noteId: Note['id'], noteVersion: string) {
+  async saveNoteVersion(noteId: Note["id"], noteVersion: string) {
     this.versionControl.commitPatch(noteVersion);
     await this.updateNote(noteId, {
       patches: this.versionControl.allPatches,
@@ -232,7 +230,7 @@ export default class Notes extends Component<NotesState> {
     return this.versionControl.getVersion(...args);
   }
 
-  onPatchSelect(patchId: Patch['id']) {
+  onPatchSelect(patchId: Patch["id"]) {
     const version = this.versionControl.getVersion(patchId);
     this.state = { noteVersion: version, patchId };
   }

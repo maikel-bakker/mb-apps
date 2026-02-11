@@ -1,5 +1,6 @@
-import { Component, darkenHex, html, lightenHex } from 'lib';
-import type { Note } from '../types';
+import { darkenHex, html, lightenHex } from "@mb/ui";
+import { Component } from "lib";
+import type { Note } from "../types";
 
 interface NotesListState {
   notes: Note[];
@@ -22,15 +23,15 @@ type NotesListCustomProps = {
 };
 
 export const NOTES_LIST_ATTRIBUTES = {
-  NOTES: 'data-notes',
-  NOTE_ID: 'data-note-id',
+  NOTES: "data-notes",
+  NOTE_ID: "data-note-id",
 };
 
 export const NOTES_LIST_CUSTOM_PROPS = {
-  ON_NOTE_INPUT_CHANGE: 'data-on-note-input-change',
-  ON_NEW_NOTE_CLICK: 'data-on-new-note-click',
-  ON_NOTE_DELETE_CLICK: 'data-on-note-delete-click',
-  ON_NOTE_FOCUS: 'data-on-note-focus',
+  ON_NOTE_INPUT_CHANGE: "data-on-note-input-change",
+  ON_NEW_NOTE_CLICK: "data-on-new-note-click",
+  ON_NOTE_DELETE_CLICK: "data-on-note-delete-click",
+  ON_NOTE_FOCUS: "data-on-note-focus",
 };
 
 export default class NotesList extends Component<
@@ -44,7 +45,7 @@ export default class NotesList extends Component<
     super({ notes: [] });
   }
 
-  protected renderHTML() {
+  renderHTML() {
     return html`
       <slot name="notes"></slot>
       <button id="new-note">+ New Note</button>
@@ -102,7 +103,7 @@ export default class NotesList extends Component<
           }
         }
 
-        [aria-selected='true'] input {
+        [aria-selected="true"] input {
           color: var(--mb-notes-list-foreground-active);
           background-color: var(--mb-notes-list-background-active);
 
@@ -118,7 +119,7 @@ export default class NotesList extends Component<
     `;
   }
 
-  protected async onMount() {
+  async onMount() {
     this.initComponentTheme(
       {
         foreground: this.theme.c.foreground,
@@ -127,7 +128,7 @@ export default class NotesList extends Component<
         backgroundHover: darkenHex(this.theme.c.background, 3),
         backgroundActive: darkenHex(this.theme.c.background, 3),
       },
-      'notes-list',
+      "notes-list",
     );
     this.setupEventListeners();
     this.renderNotes();
@@ -144,7 +145,7 @@ export default class NotesList extends Component<
     }
   }
 
-  protected async onStateChange() {
+  async onStateChange() {
     this.renderHTML();
     this.renderNotes();
   }
@@ -172,15 +173,15 @@ export default class NotesList extends Component<
                 </button>
               </li>`,
           )
-          .join('')}
+          .join("")}
       </ul>
     `;
 
-    const input = ul.querySelectorAll('input');
+    const input = ul.querySelectorAll("input");
     input.forEach((inputElement) => {
       let debounceTimer: NodeJS.Timeout;
 
-      inputElement.addEventListener('change', async (e) => {
+      inputElement.addEventListener("change", async (e) => {
         const target = e.target as HTMLInputElement;
         const noteId = NotesList.getNoteIdFromElement(target)!;
         const newTitle = target.value;
@@ -194,16 +195,16 @@ export default class NotesList extends Component<
         }, 1000);
       });
 
-      inputElement.addEventListener('focusin', (e) => {
+      inputElement.addEventListener("focusin", (e) => {
         const target = e.target as HTMLInputElement;
         const noteId = NotesList.getNoteIdFromElement(target)!;
         this.props?.onNoteFocus(noteId);
       });
     });
 
-    const deleteButtons = ul.querySelectorAll('li > button');
+    const deleteButtons = ul.querySelectorAll("li > button");
     deleteButtons.forEach((buttonElement) => {
-      buttonElement.addEventListener('click', async (e) => {
+      buttonElement.addEventListener("click", async (e) => {
         const target = e.target as HTMLButtonElement;
         const noteId = NotesList.getNoteIdFromElement(target)!;
         await this.props?.onNoteDeleteClick(noteId);
@@ -212,14 +213,14 @@ export default class NotesList extends Component<
   }
 
   setupEventListeners() {
-    const newNoteButton = this.shadowRoot!.querySelector('#new-note')!;
+    const newNoteButton = this.shadowRoot!.querySelector("#new-note")!;
 
-    newNoteButton.addEventListener('click', async () => {
+    newNoteButton.addEventListener("click", async () => {
       await this.props?.onNewNoteClick();
     });
   }
 
   static getNoteIdFromElement(element: Element) {
-    return element.getAttribute('data-note-id');
+    return element.getAttribute("data-note-id");
   }
 }

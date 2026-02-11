@@ -1,7 +1,7 @@
 {
   "name": "@mb/notes",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
     "vitest": "^4.0.3"
   },
   "dependencies": {
+    "@mb/ui": "^1.0.0",
     "diff": "^8.0.2",
     "localforage": "^1.10.0",
     "marked": "^16.4.1"

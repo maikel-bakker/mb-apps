@@ -1,30 +1,30 @@
-import { camelCaseToKebabCase, pipe } from 'utils';
+import { camelCaseToKebabCase, pipe } from "@mb/utils";
 
 type HSL = [number, number, number];
 
 export function css(strings: TemplateStringsArray, ...values: any[]) {
-  return strings.reduce((acc, str, i) => acc + str + (values[i] || ''), '');
+  return strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
 }
 
 export function insertStyle(
   styleContent: string,
   element: Document | ShadowRoot | HTMLElement = document.head,
 ) {
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.textContent = styleContent;
   element.appendChild(style);
 }
 
 export function hexToHsl(hex: string): [number, number, number] {
   // Remove the hash if present
-  hex = hex.replace(/^#/, '');
+  hex = hex.replace(/^#/, "");
 
   // Convert 3-char hex to 6-char hex
   if (hex.length === 3) {
     hex = hex
-      .split('')
+      .split("")
       .map((x) => x + x)
-      .join('');
+      .join("");
   }
 
   // Parse r, g, b values from the hex string
@@ -114,7 +114,7 @@ export function hslToHex(hsl: HSL): string {
     // Round the numbers after adding m and scale to [0, 255]
     const hex = Math.round((n + m) * 255)
       .toString(16)
-      .padStart(2, '0');
+      .padStart(2, "0");
     return hex;
   };
 
@@ -123,19 +123,19 @@ export function hslToHex(hsl: HSL): string {
 
 export function convertColorsToCSSVars(
   colors: Record<string, any>,
-  prefix = '--mb',
+  prefix = "--mb",
 ): string {
   const convert = (obj: Record<string, any>, path: string[]): string => {
     return Object.entries(obj)
       .map(([key, value]) => {
         const kebabKey = camelCaseToKebabCase(key);
-        if (typeof value === 'object' && value !== null) {
+        if (typeof value === "object" && value !== null) {
           return convert(value, [...path, kebabKey]);
         } else {
-          return `${path.concat(kebabKey).join('-')}: ${value};`;
+          return `${path.concat(kebabKey).join("-")}: ${value};`;
         }
       })
-      .join('\n');
+      .join("\n");
   };
 
   return convert(colors, [prefix]);
@@ -147,4 +147,12 @@ export function lightenHex(hex: string, percent: number): string {
 
 export function darkenHex(hex: string, percent: number): string {
   return pipe(hexToHsl, (hsl: HSL) => darken(hsl, percent), hslToHex)(hex);
+}
+
+export function getCssVariableValue(
+  variable: string,
+  root = document.documentElement,
+) {
+  const value = getComputedStyle(root).getPropertyValue(variable).trim();
+  return value;
 }

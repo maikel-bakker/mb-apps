@@ -1,5 +1,6 @@
-import { Component, darkenHex, html } from 'lib';
-import type { Note } from 'types';
+import { darkenHex, html } from "@mb/ui";
+import { Component } from "lib";
+import type { Note } from "types";
 
 type SidebarState = {
   notes: Note[];
@@ -19,11 +20,11 @@ export default class Sidebar extends Component<SidebarState, SidebarTheme> {
       {
         background: darkenHex(this.theme.c.background, 8),
       },
-      'sidebar',
+      "sidebar",
     );
   }
 
-  protected renderHTML() {
+  renderHTML() {
     return html`
       <aside>
         <h1>Notes</h1>

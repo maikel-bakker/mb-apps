@@ -1,0 +1,22 @@
+:root {
+  --mb-background: #242424;
+
+  background-color: var(--mb-background);
+  color: var(--mb-foreground);
+  font-size: 14px;
+
+  @media (min-width: 1200px) {
+    font-size: 16px;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#app {
+  height: 100%;
+}

@@ -1,27 +1,28 @@
 :root {
-  --background: #ffffff;
-  --foreground: #272e33;
-  --cta: #1971c2;
-  --hint: #5191ca;
-  --success: #38d9a9;
-  --error: #fb8787;
-  --border-radius: 0.5em;
-  --white: #ffffff;
-  --black: #000000;
-  --font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --line-height: 1.5;
-  --font-weight: 400;
+  --mb-background: #ffffff;
+  --mb-foreground: #272e33;
+  --mb-cta: #1971c2;
+  --mb-hint: #5191ca;
+  --mb-success: #38d9a9;
+  --mb-error: #fb8787;
+  --mb-border-radius: 0.5em;
+  --mb-border-color: #565656;
+  --mb-white: #ffffff;
+  --mb-black: #000000;
+  --mb-font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --mb-line-height: 1.5;
+  --mb-font-weight: 400;
 
   color-scheme: light dark;
-  font-family: var(--font-family);
-  line-height: var(--line-height);
-  font-weight: var(--font-weight);
+  font-family: var(--mb-font-family);
+  line-height: var(--mb-line-height);
+  font-weight: var(--mb-font-weight);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #212121;
-    --foreground: #ffffff;
+    --mb-background: #212121;
+    --mb-foreground: #ffffff;
   }
 }
 

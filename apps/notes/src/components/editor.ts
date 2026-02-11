@@ -1,8 +1,8 @@
-import { marked } from 'marked';
-import Component from '../lib/component';
-import { html } from '../lib/html';
-import { darkenHex, getNoteId } from 'lib';
-import type { Patch } from '../types';
+import { marked } from "marked";
+import Component from "../lib/component";
+import { html, darkenHex } from "@mb/ui";
+import { getNoteId } from "lib";
+import type { Patch } from "../types";
 
 type EditorState = {
   notes: string;
@@ -33,15 +33,15 @@ marked.setOptions({
 });
 
 export const EDITOR_ATTRIBUTES = {
-  NOTE_ID: 'data-note-id',
-  NOTE_VERSION: 'data-note-version',
-  PATCHES: 'data-patches',
-  PATCH_ID: 'data-patch-id',
+  NOTE_ID: "data-note-id",
+  NOTE_VERSION: "data-note-version",
+  PATCHES: "data-patches",
+  PATCH_ID: "data-patch-id",
 };
 
 export const EDITOR_CUSTOM_PROPS = {
-  ON_NOTE_SAVE: 'data-on-note-save',
-  ON_PATCH_SELECT: 'data-on-patch-select',
+  ON_NOTE_SAVE: "data-on-note-save",
+  ON_PATCH_SELECT: "data-on-patch-select",
 };
 
 export default class Editor extends Component<
@@ -51,16 +51,16 @@ export default class Editor extends Component<
 > {
   static observedAttributes = Object.values(EDITOR_ATTRIBUTES);
 
-  constructor(initialNotes = '') {
+  constructor(initialNotes = "") {
     super({ notes: initialNotes, patches: [] });
   }
 
   queryInput() {
-    return this.shadowRoot!.querySelector('textarea')!;
+    return this.shadowRoot!.querySelector("textarea")!;
   }
 
   queryPreview() {
-    return this.shadowRoot!.querySelector('article')!;
+    return this.shadowRoot!.querySelector("article")!;
   }
 
   async onMount() {
@@ -76,7 +76,7 @@ export default class Editor extends Component<
         historyItemHoverBorderColor: this.theme.c.focus,
         historyItemSelectedBorderColor: this.theme.c.secondary,
       },
-      'editor',
+      "editor",
     );
     this.setupEventListeners();
   }
@@ -161,7 +161,7 @@ export default class Editor extends Component<
         }
 
         .toast {
-          display: 'inline-flex';
+          display: "inline-flex";
           background: #191520;
           color: #fff;
           border: none;
@@ -226,7 +226,7 @@ export default class Editor extends Component<
               outline-color: var(--mb-editor-history-item-hover-border-color);
             }
 
-            &[aria-pressed='true'] {
+            &[aria-pressed="true"] {
               outline-color: var(
                 --mb-editor-history-item-selected-border-color
               );
@@ -242,20 +242,20 @@ export default class Editor extends Component<
     this.setupEditor();
 
     // listen for history changes and get noteId from /notes/:noteId
-    window.addEventListener('popstate', async () => {
+    window.addEventListener("popstate", async () => {
       const noteId = getNoteId();
       if (!noteId) return;
 
       this.state = { noteId };
     });
 
-    const versionsList = this.shadowRoot!.querySelector('.versions > ul');
+    const versionsList = this.shadowRoot!.querySelector(".versions > ul");
     if (!versionsList) return;
-    const historyButton = this.shadowRoot!.querySelector('.versions > button');
+    const historyButton = this.shadowRoot!.querySelector(".versions > button");
     if (!historyButton) return;
 
-    historyButton.addEventListener('click', () => {
-      versionsList.classList.toggle('show');
+    historyButton.addEventListener("click", () => {
+      versionsList.classList.toggle("show");
     });
   }
 
@@ -263,7 +263,7 @@ export default class Editor extends Component<
     const textarea = this.queryInput();
     let debounceTimer: NodeJS.Timeout;
 
-    textarea.addEventListener('input', (event) => {
+    textarea.addEventListener("input", (event) => {
       const target = event.target as HTMLTextAreaElement;
       this.state = { notes: target.value };
 
@@ -281,21 +281,21 @@ export default class Editor extends Component<
     if (!this.state.noteId) return;
 
     this.props?.onNoteSave(this.state.noteId, notes);
-    this.showToast('Notes saved');
+    this.showToast("Notes saved");
   }
 
   showToast(message: string) {
-    const toast = this.shadowRoot!.querySelector('.toast')!;
+    const toast = this.shadowRoot!.querySelector(".toast")!;
     toast.innerHTML = message;
-    toast.classList.add('show');
+    toast.classList.add("show");
     setTimeout(() => {
-      toast.classList.remove('show');
-      toast.innerHTML = '';
+      toast.classList.remove("show");
+      toast.innerHTML = "";
     }, 1500);
   }
 
   renderPatches() {
-    const versionsList = this.shadowRoot!.querySelector('.versions > ul');
+    const versionsList = this.shadowRoot!.querySelector(".versions > ul");
     if (!versionsList) return;
 
     const patches = [...this.state.patches];
@@ -315,12 +315,12 @@ export default class Editor extends Component<
             </li>
           `,
         )
-        .join('')}
+        .join("")}
     `;
 
-    versionsList.querySelectorAll('button').forEach((button) => {
-      button.addEventListener('click', () => {
-        const patchId = button.getAttribute('data-patch-id')!;
+    versionsList.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const patchId = button.getAttribute("data-patch-id")!;
         this.props?.onPatchSelect(patchId);
       });
     });

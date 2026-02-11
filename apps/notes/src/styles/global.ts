@@ -1,4 +1,4 @@
-import { css } from 'lib';
+import { css } from "@mb/ui";
 
 const global = css`
   * {
