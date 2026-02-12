@@ -214,6 +214,11 @@
     background: transparent;
     color: var(--mb-foreground);
   }
+
+  &[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 .mb-card {

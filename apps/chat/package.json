@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mb/styles": "1.0.o",
-    "@mb/ui": "1.0.0"
+    "@mb/styles": "1.0.0",
+    "@mb/ui": "1.0.0",
+    "localforage": "^1.10.0",
+    "openai": "^6.21.0"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
