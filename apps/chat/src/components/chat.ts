@@ -28,6 +28,10 @@ export default class Chat extends Component<ChatState> {
     });
     this.renderChatMessages();
     this.renderSidebar();
+
+    if ("currentChatId" in newState) {
+      this.renderChatInput();
+    }
   }
 
   setupEventListeners() {
@@ -74,7 +78,14 @@ export default class Chat extends Component<ChatState> {
     const chatInputSlot = this.shadowRoot?.querySelector(
       'slot[name="chat-input"]',
     ) as HTMLSlotElement | null;
-    if (!chatInputSlot) return;
+    if (!chatInputSlot) {
+      return;
+    }
+
+    if (!this.state.currentChatId) {
+      chatInputSlot.innerHTML = "";
+      return;
+    }
 
     chatInputSlot.innerHTML = html`
       <form>
@@ -117,18 +128,9 @@ export default class Chat extends Component<ChatState> {
         return;
       }
 
-      const updatedChat = await chatsStore.updateChat(currentChat.id, {
+      await this.updateChat(currentChat.id, {
         messages: [...currentChat.messages, newMessage],
       });
-
-      this.state = {
-        chats: this.state.chats.map((chat) => {
-          if (chat.id === currentChat.id) {
-            return updatedChat;
-          }
-          return chat;
-        }),
-      };
 
       form.reset();
     });
@@ -149,6 +151,17 @@ export default class Chat extends Component<ChatState> {
         "No chat found for currentChatId:",
         this.state.currentChatId,
       );
+      chatMessagesSlot.innerHTML = html`
+        <p class="empty">Select a chat or start a new one to see messages.</p>
+        <style>
+          .empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+          }
+        </style>
+      `;
       return;
     }
 
@@ -321,19 +334,7 @@ export default class Chat extends Component<ChatState> {
 
     const newChatButton = this.shadowRoot?.querySelector("#new-chat");
     newChatButton?.addEventListener("click", async () => {
-      const newChatData: ChatConversation = {
-        id: crypto.randomUUID(),
-        title: `Chat ${Object.keys(this.state.chats).length + 1}`,
-        messages: [],
-        timestamp: Date.now(),
-      };
-
-      const newChat = await chatsStore.saveChat(newChatData.id, newChatData);
-
-      this.state = {
-        chats: [...this.state.chats, newChat],
-      };
-
+      const newChat = await this.addChat();
       navigateTo(`/chat/${newChat.id}`);
     });
 
@@ -354,14 +355,10 @@ export default class Chat extends Component<ChatState> {
       button.addEventListener("click", async () => {
         const chatId = button.getAttribute("data-delete-chat-id");
         if (chatId) {
-          await chatsStore.deleteChat(chatId);
-
-          this.state = {
-            chats: this.state.chats.filter((chat) => chat.id !== chatId),
-          };
+          await this.deleteChat(chatId);
 
           if (this.state.currentChatId === chatId) {
-            navigateTo(`/chat`);
+            navigateTo(`/`);
           }
         }
       });
@@ -370,22 +367,64 @@ export default class Chat extends Component<ChatState> {
 
   retrieveCurrentChatId() {
     const chatId = getChatId();
-    if (chatId) {
-      this.state = { currentChatId: chatId };
-    }
+    this.state = { currentChatId: chatId };
+  }
+
+  async addChat() {
+    const newChatData: ChatConversation = {
+      id: crypto.randomUUID(),
+      title: `Chat ${Object.keys(this.state.chats).length + 1}`,
+      messages: [],
+      timestamp: Date.now(),
+    };
+
+    const newChat = await chatsStore.saveChat(newChatData.id, newChatData);
+
+    this.state = {
+      chats: [...this.state.chats, newChat],
+    };
+
+    return newChat;
+  }
+
+  async deleteChat(chatId: string) {
+    await chatsStore.deleteChat(chatId);
+
+    this.state = {
+      chats: this.state.chats.filter((chat) => chat.id !== chatId),
+    };
+  }
+
+  async updateChat(chatId: string, chat: Partial<ChatConversation>) {
+    const updatedChat = await chatsStore.updateChat(chatId, chat);
+    this.state = {
+      chats: this.state.chats.map((chat) => {
+        if (chat.id === chatId) {
+          return updatedChat;
+        }
+        return chat;
+      }),
+    };
   }
 }
 
 // @TODO: move to router package
-export function navigateTo(path: string) {
+function navigateTo(path: string) {
   window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-export function getChatId() {
+function getChatId() {
   const pathParts = window.location.pathname.split("/");
   const chatPath = pathParts.findIndex((part) => part === "chat");
   if (chatPath === -1) return undefined;
 
   return pathParts[chatPath + 1] || undefined;
+}
+
+function matchPath(path: string) {
+  const currentRoute = window.location.pathname;
+  const routeParts = currentRoute.split("/").filter(Boolean);
+
+  return routeParts.includes(path);
 }
