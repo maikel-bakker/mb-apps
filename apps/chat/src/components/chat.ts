@@ -9,6 +9,8 @@ marked.setOptions({
   breaks: true,
 });
 
+const UNTITLED_CHAT_TITLE = "New Chat";
+
 type ChatState = {
   currentChatId?: ChatConversation["id"];
   chats: ChatConversation[];
@@ -19,6 +21,12 @@ export default class Chat extends Component<ChatState> {
   private openAI = new OpenAI({
     apiKey: import.meta.env.VITE_OPEN_AI_KEY,
     dangerouslyAllowBrowser: true,
+  });
+  private openAIChat = new OpenAIChat(this.openAI, {
+    model: "gpt-5.2-chat-latest",
+    instructions:
+      "You are a helpful assistant that helps users with their queries.",
+    tools: [{ type: "web_search" }],
   });
 
   constructor() {
@@ -169,6 +177,30 @@ export default class Chat extends Component<ChatState> {
       };
 
       await this.addChatMessage(this.state.currentChatId, newMessage);
+
+      const currentChat = this.state.chats.find(
+        (chat) => chat.id === this.state.currentChatId,
+      );
+
+      const userMessageCount =
+        currentChat?.messages.filter((msg) => msg.sender === "user").length ||
+        0;
+
+      /**
+       * If this is the first user message in a new chat,
+       * generate a title for the chat based on the message content.
+       */
+      if (
+        currentChat &&
+        userMessageCount === 1 &&
+        currentChat.title === UNTITLED_CHAT_TITLE
+      ) {
+        const title = await this.openAIChat.createChatTitle(
+          currentChat.messages,
+        );
+        await this.updateChat(this.state.currentChatId, { title });
+      }
+
       form.reset();
     });
   }
@@ -335,6 +367,7 @@ export default class Chat extends Component<ChatState> {
                       class="${chat.id === this.state.currentChatId
                         ? "active"
                         : ""}"
+                      title="${chat.title}"
                     >
                       ${chat.title}
                     </button>
@@ -357,9 +390,9 @@ export default class Chat extends Component<ChatState> {
       <style>
         aside {
           background-color: ${lightenHex(
-            getCssVariableValue("--mb-background"),
-            2,
-          )};
+          getCssVariableValue("--mb-background"),
+          2,
+        )};
 
           nav {
             ul {
@@ -374,9 +407,21 @@ export default class Chat extends Component<ChatState> {
               gap: 0.5em;
             }
             button {
-              &.active {
-                border-color: var(--mb-hint);
-              }
+              cursor: pointer;
+
+              &[data-chat-id] {
+                width: 100%;
+                background: none;
+                border: none;
+                text-align: left;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0.5em 1em;
+
+                &.active {
+                  border-left: 2px solid var(--mb-hint);
+                }
             }
           }
         }
@@ -489,21 +534,16 @@ export default class Chat extends Component<ChatState> {
   async addChat() {
     this.state = { isResponseLoading: true };
 
-    const aiResponse = await this.openAI.responses.create({
-      model: "gpt-5.2-chat-latest",
-      instructions:
-        "You are a helpful assistant that helps users with their queries.",
-      input: [
-        {
-          role: "user",
-          content: "Hello, who are you?",
-        },
-      ],
-    });
+    const aiResponse = await this.openAIChat.createResponse([
+      {
+        role: "user",
+        content: "Hello, who are you?",
+      },
+    ]);
 
     const newChatData: ChatConversation = {
       id: crypto.randomUUID(),
-      title: `Chat ${Object.keys(this.state.chats).length + 1}`,
+      title: UNTITLED_CHAT_TITLE,
       messages: [
         {
           id: aiResponse.id,
@@ -550,18 +590,15 @@ export default class Chat extends Component<ChatState> {
       .sort((a, b) => b.timestamp - a.timestamp)
       .at(0)?.id;
 
-    const aiResponse = await this.openAI.responses.create({
-      model: "gpt-5.2-chat-latest",
-      instructions:
-        "You are a helpful assistant that helps users with their queries.",
-      input: [
+    const aiResponse = await this.openAIChat.createResponse(
+      [
         {
           role: message.sender === "user" ? "user" : "assistant",
           content: message.message,
         },
       ],
-      previous_response_id: previousMessageId,
-    });
+      previousMessageId,
+    );
 
     this.updateChat(chatId, {
       messages: [
@@ -613,4 +650,46 @@ function matchPath(path: string) {
   const routeParts = currentRoute.split("/").filter(Boolean);
 
   return routeParts.includes(path);
+}
+
+type OpenAIChatOptions = Pick<
+  OpenAI.Responses.ResponseCreateParamsNonStreaming,
+  "model" | "instructions" | "tools"
+>;
+
+class OpenAIChat {
+  private openAI: OpenAI;
+  private options: OpenAIChatOptions = {};
+
+  constructor(openAI: OpenAI, options?: OpenAIChatOptions) {
+    this.openAI = openAI;
+    this.options = { ...this.options, ...options };
+  }
+
+  async createResponse(
+    input: OpenAI.Responses.ResponseInput,
+    previousResponseId?: string,
+  ) {
+    const response = await this.openAI.responses.create({
+      ...this.options,
+      input,
+      previous_response_id: previousResponseId,
+    });
+
+    return response;
+  }
+
+  async createChatTitle(messages: ChatMessage[]) {
+    const response = await this.openAI.responses.create({
+      model: "gpt-5.2-chat-latest",
+      input: messages.map((msg) => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.message,
+      })),
+      instructions:
+        "Generate a concise title for this chat conversation in 1 sentence",
+    });
+
+    return response.output_text;
+  }
 }
