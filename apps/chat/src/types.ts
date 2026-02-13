@@ -6,12 +6,8 @@ export type ChatConversation = {
 };
 
 export type ChatMessage = {
+  id: string;
   timestamp: number;
   sender: "user" | "bot";
   message: string;
-};
-
-export type ChatState = {
-  currentChatId?: ChatConversation["id"];
-  chats: ChatConversation[];
 };

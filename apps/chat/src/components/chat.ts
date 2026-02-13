@@ -1,12 +1,30 @@
 import { getCssVariableValue, html, lightenHex } from "@mb/ui";
 import Component from "../lib/component";
 import { chatsStore } from "../stores";
-import type { ChatConversation, ChatMessage, ChatState } from "../types";
+import type { ChatConversation, ChatMessage } from "../types";
+import OpenAI from "openai";
+import { marked } from "marked";
+
+marked.setOptions({
+  breaks: true,
+});
+
+type ChatState = {
+  currentChatId?: ChatConversation["id"];
+  chats: ChatConversation[];
+  isResponseLoading: boolean;
+};
 
 export default class Chat extends Component<ChatState> {
+  private openAI = new OpenAI({
+    apiKey: import.meta.env.VITE_OPEN_AI_KEY,
+    dangerouslyAllowBrowser: true,
+  });
+
   constructor() {
     super({
       chats: [],
+      isResponseLoading: false,
     });
   }
 
@@ -15,7 +33,7 @@ export default class Chat extends Component<ChatState> {
     this.state = { chats };
 
     this.retrieveCurrentChatId();
-    this.setupEventListeners();
+    this.setupRouteListeners();
     this.renderSidebar();
     this.renderChatMessages();
     this.renderChatInput();
@@ -29,12 +47,12 @@ export default class Chat extends Component<ChatState> {
     this.renderChatMessages();
     this.renderSidebar();
 
-    if ("currentChatId" in newState) {
+    if ("currentChatId" in newState || "isResponseLoading" in newState) {
       this.renderChatInput();
     }
   }
 
-  setupEventListeners() {
+  setupRouteListeners() {
     window.addEventListener("popstate", async () => {
       this.retrieveCurrentChatId();
     });
@@ -59,16 +77,6 @@ export default class Chat extends Component<ChatState> {
           justify-content: flex-end;
           padding: 16px;
           overflow: hidden;
-
-          form {
-            display: flex;
-            align-items: center;
-            gap: 1em;
-          }
-
-          textarea {
-            width: 100%;
-          }
         }
       </style>
     `;
@@ -88,18 +96,61 @@ export default class Chat extends Component<ChatState> {
     }
 
     chatInputSlot.innerHTML = html`
-      <form>
+      <form class="chat-input-form">
         <textarea
           name="message"
           placeholder="Type your message..."
           class="mb-input"
           required
+          ${this.state.isResponseLoading ? "disabled" : null}
         ></textarea>
-        <button type="submit" class="mb-button primary">Send</button>
+        <button
+          type="submit"
+          class="mb-button primary"
+          ${this.state.isResponseLoading ? "disabled" : null}
+        >
+          Send
+        </button>
       </form>
+      <style>
+        .chat-input-form {
+          display: flex;
+          align-items: center;
+          gap: 1em;
+        }
+
+        textarea {
+          width: 100%;
+          resize: none;
+        }
+      </style>
     `;
 
     const form = this.shadowRoot?.querySelector("form");
+    const textarea = form?.querySelector(
+      'textarea[name="message"]',
+    ) as HTMLTextAreaElement | null;
+
+    const textareaInitialHeight = textarea?.scrollHeight;
+
+    const autoResize = () => {
+      if (!textarea) {
+        return;
+      }
+      textarea.style.height = `${textareaInitialHeight}px`;
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+
+    textarea?.addEventListener("keydown", (event) => {
+      const e = event as KeyboardEvent;
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        form?.requestSubmit();
+      }
+    });
+
+    textarea?.addEventListener("input", autoResize);
+
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!this.state.currentChatId) {
@@ -111,32 +162,18 @@ export default class Chat extends Component<ChatState> {
       const formDataObject = Object.fromEntries(formData.entries());
 
       const newMessage: ChatMessage = {
+        id: crypto.randomUUID(),
         timestamp: Date.now(),
         sender: "user",
         message: formDataObject.message as string,
       };
 
-      const currentChat = this.state.chats.find(
-        (chat) => chat.id === this.state.currentChatId,
-      );
-
-      if (!currentChat) {
-        console.error(
-          "No chat found for currentChatId:",
-          this.state.currentChatId,
-        );
-        return;
-      }
-
-      await this.updateChat(currentChat.id, {
-        messages: [...currentChat.messages, newMessage],
-      });
-
+      await this.addChatMessage(this.state.currentChatId, newMessage);
       form.reset();
     });
   }
 
-  renderChatMessages() {
+  async renderChatMessages() {
     const chatMessagesSlot = this.shadowRoot?.querySelector(
       'slot[name="chat-messages"]',
     ) as HTMLSlotElement | null;
@@ -168,26 +205,32 @@ export default class Chat extends Component<ChatState> {
     chatMessagesSlot.innerHTML = html`
       <div class="chats">
         <ol aria-live="polite" aria-relevant="additions">
-          ${currentChat.messages
-            .map((message) => {
-              return html`
-                <li class="${message.sender}">
-                  <article>
-                    <header>
-                      <time
-                        datetime="${new Date(message.timestamp).toISOString()}"
-                        >${new Date(message.timestamp).toLocaleString()}</time
-                      >
-                      <strong
-                        >${message.sender === "user" ? "You" : "Bot"}</strong
-                      >
-                    </header>
-                    <div class="message">${message.message}</div>
-                  </article>
-                </li>
-              `;
-            })
-            .join("")}
+          ${(
+            await Promise.all(
+              currentChat.messages.map(async (message) => {
+                return html`
+                  <li class="${message.sender}">
+                    <article>
+                      <header>
+                        <time
+                          datetime="${new Date(
+                            message.timestamp,
+                          ).toISOString()}"
+                          >${new Date(message.timestamp).toLocaleString()}</time
+                        >
+                        <strong
+                          >${message.sender === "user" ? "You" : "Bot"}</strong
+                        >
+                      </header>
+                      <div class="message">
+                        ${await marked(message.message)}
+                      </div>
+                    </article>
+                  </li>
+                `;
+              }),
+            )
+          ).join("")}
         </ol>
       </div>
       <style>
@@ -249,7 +292,7 @@ export default class Chat extends Component<ChatState> {
 
             .message {
               width: fit-content;
-              padding: 0.75em 1em;
+              padding: 0em 1em;
               border-radius: var(--mb-border-radius);
               background-color: ${lightenHex(
                 getCssVariableValue("--mb-background"),
@@ -260,6 +303,14 @@ export default class Chat extends Component<ChatState> {
         }
       </style>
     `;
+
+    this.renderLoader();
+
+    // Scroll to the bottom of the chat messages
+    const chatMessagesContainer = chatMessagesSlot.querySelector(".chats ol");
+    if (chatMessagesContainer) {
+      chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
   }
 
   renderSidebar() {
@@ -365,22 +416,109 @@ export default class Chat extends Component<ChatState> {
     });
   }
 
+  renderLoader() {
+    const parent = this.shadowRoot?.querySelector(
+      'slot[name="chat-messages"] ',
+    ) as HTMLSlotElement | null;
+
+    if (!parent) {
+      return;
+    }
+
+    if (this.state.isResponseLoading) {
+      parent.innerHTML += html`
+        <div class="loader" aria-label="Assistant is typing">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+        <style>
+          .loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 50%;
+            padding-bottom: 1em;
+          }
+
+          .loader .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.4;
+            animation: typing 1.2s infinite ease-in-out;
+          }
+
+          .loader .dot:nth-child(2) {
+            animation-delay: 0.2s;
+          }
+
+          .loader .dot:nth-child(3) {
+            animation-delay: 0.4s;
+          }
+
+          @keyframes typing {
+            0%,
+            80%,
+            100% {
+              transform: translateY(0);
+              opacity: 0.4;
+            }
+            40% {
+              transform: translateY(-4px);
+              opacity: 1;
+            }
+          }
+        </style>
+      `;
+    } else {
+      const loader = parent.querySelector(".loader");
+      if (loader) {
+        loader.remove();
+      }
+    }
+  }
+
   retrieveCurrentChatId() {
     const chatId = getChatId();
     this.state = { currentChatId: chatId };
   }
 
   async addChat() {
+    this.state = { isResponseLoading: true };
+
+    const aiResponse = await this.openAI.responses.create({
+      model: "gpt-5.2-chat-latest",
+      instructions:
+        "You are a helpful assistant that helps users with their queries.",
+      input: [
+        {
+          role: "user",
+          content: "Hello, who are you?",
+        },
+      ],
+    });
+
     const newChatData: ChatConversation = {
       id: crypto.randomUUID(),
       title: `Chat ${Object.keys(this.state.chats).length + 1}`,
-      messages: [],
-      timestamp: Date.now(),
+      messages: [
+        {
+          id: aiResponse.id,
+          sender: "bot",
+          message: aiResponse.output_text,
+          timestamp: aiResponse.created_at * 1000,
+        },
+      ],
+      timestamp: aiResponse.created_at,
     };
 
     const newChat = await chatsStore.saveChat(newChatData.id, newChatData);
 
     this.state = {
+      isResponseLoading: false,
       chats: [...this.state.chats, newChat],
     };
 
@@ -395,16 +533,64 @@ export default class Chat extends Component<ChatState> {
     };
   }
 
-  async updateChat(chatId: string, chat: Partial<ChatConversation>) {
-    const updatedChat = await chatsStore.updateChat(chatId, chat);
+  async addChatMessage(chatId: string, message: ChatMessage) {
+    const currentChat = this.state.chats.find((chat) => chat.id === chatId);
+    if (!currentChat) {
+      throw new Error(`Chat with id ${chatId} not found`);
+    }
+
+    const updatedChat = await this.updateChat(chatId, {
+      messages: [...currentChat.messages, message],
+    });
+
+    this.state = { isResponseLoading: true };
+
+    const previousMessageId = updatedChat.messages
+      .filter((msg) => msg.sender === "bot")
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .at(0)?.id;
+
+    const aiResponse = await this.openAI.responses.create({
+      model: "gpt-5.2-chat-latest",
+      instructions:
+        "You are a helpful assistant that helps users with their queries.",
+      input: [
+        {
+          role: message.sender === "user" ? "user" : "assistant",
+          content: message.message,
+        },
+      ],
+      previous_response_id: previousMessageId,
+    });
+
+    this.updateChat(chatId, {
+      messages: [
+        ...updatedChat.messages,
+        {
+          id: aiResponse.id,
+          sender: "bot",
+          message: aiResponse.output_text,
+          timestamp: aiResponse.created_at * 1000,
+        },
+      ],
+    });
+
+    this.state = { isResponseLoading: false };
+  }
+
+  async updateChat(chatId: string, updatedFields: Partial<ChatConversation>) {
+    const updatedChat = await chatsStore.updateChat(chatId, updatedFields);
+
     this.state = {
-      chats: this.state.chats.map((chat) => {
-        if (chat.id === chatId) {
+      chats: this.state.chats.map((c) => {
+        if (c.id === chatId) {
           return updatedChat;
         }
-        return chat;
+        return c;
       }),
     };
+
+    return updatedChat;
   }
 }
 
