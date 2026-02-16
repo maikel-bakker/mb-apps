@@ -18,16 +18,7 @@ type ChatState = {
 };
 
 export default class Chat extends Component<ChatState> {
-  private openAI = new OpenAI({
-    apiKey: import.meta.env.VITE_OPEN_AI_KEY,
-    dangerouslyAllowBrowser: true,
-  });
-  private openAIChat = new OpenAIChat(this.openAI, {
-    model: "gpt-5.2-chat-latest",
-    instructions:
-      "You are a helpful assistant that helps users with their queries.",
-    tools: [{ type: "web_search" }],
-  });
+  private chatAPI = new ChatAPI(import.meta.env.VITE_API_BASE_URL);
 
   constructor() {
     super({
@@ -195,7 +186,7 @@ export default class Chat extends Component<ChatState> {
         userMessageCount === 1 &&
         currentChat.title === UNTITLED_CHAT_TITLE
       ) {
-        const title = await this.openAIChat.createChatTitle(
+        const { title } = await this.chatAPI.createChatTitle(
           currentChat.messages,
         );
         await this.updateChat(this.state.currentChatId, { title });
@@ -534,7 +525,7 @@ export default class Chat extends Component<ChatState> {
   async addChat() {
     this.state = { isResponseLoading: true };
 
-    const aiResponse = await this.openAIChat.createResponse([
+    const { response: aiResponse } = await this.chatAPI.createResponse([
       {
         role: "user",
         content: "Hello, who are you?",
@@ -590,7 +581,7 @@ export default class Chat extends Component<ChatState> {
       .sort((a, b) => b.timestamp - a.timestamp)
       .at(0)?.id;
 
-    const aiResponse = await this.openAIChat.createResponse(
+    const { response: aiResponse } = await this.chatAPI.createResponse(
       [
         {
           role: message.sender === "user" ? "user" : "assistant",
@@ -652,44 +643,39 @@ function matchPath(path: string) {
   return routeParts.includes(path);
 }
 
-type OpenAIChatOptions = Pick<
-  OpenAI.Responses.ResponseCreateParamsNonStreaming,
-  "model" | "instructions" | "tools"
->;
+class ChatAPI {
+  private baseUrl: string;
 
-class OpenAIChat {
-  private openAI: OpenAI;
-  private options: OpenAIChatOptions = {};
-
-  constructor(openAI: OpenAI, options?: OpenAIChatOptions) {
-    this.openAI = openAI;
-    this.options = { ...this.options, ...options };
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
   }
 
   async createResponse(
     input: OpenAI.Responses.ResponseInput,
     previousResponseId?: string,
   ) {
-    const response = await this.openAI.responses.create({
-      ...this.options,
-      input,
-      previous_response_id: previousResponseId,
+    const chatRoute = "/api/chat";
+    const response = await fetch(`${this.baseUrl}${chatRoute}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ input, previousResponseId }),
     });
 
-    return response;
+    return response.json();
   }
 
   async createChatTitle(messages: ChatMessage[]) {
-    const response = await this.openAI.responses.create({
-      model: "gpt-5.2-chat-latest",
-      input: messages.map((msg) => ({
-        role: msg.sender === "user" ? "user" : "assistant",
-        content: msg.message,
-      })),
-      instructions:
-        "Generate a concise title for this chat conversation in 1 sentence",
+    const chatTitleRoute = "/api/chat/title";
+    const response = await fetch(`${this.baseUrl}${chatTitleRoute}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages }),
     });
 
-    return response.output_text;
+    return response.json();
   }
 }
